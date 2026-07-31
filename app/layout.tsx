@@ -21,8 +21,14 @@ export default function RootLayout({
     <html
       lang="en"
       className="h-full bg-neutral-950 antialiased font-sans"
+      suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col bg-neutral-950">{children}</body>
+      <body
+        className="min-h-full flex flex-col bg-neutral-950"
+        suppressHydrationWarning
+      >
+        {children}
+      </body>
     </html>
   );
 }
