@@ -6,7 +6,7 @@ type CameraPreviewProps = {
 
 export function CameraPreview({ facingFront }: CameraPreviewProps) {
   return (
-    <div className="relative aspect-square w-full max-w-sm">
+    <div className="relative aspect-square w-[90%] max-w-[21.6rem]">
       <div className="relative aspect-square w-full overflow-hidden rounded-3xl bg-neutral-800 shadow-2xl shadow-black/60 ring-1 ring-white/10">
         {/* simulated live camera feed */}
         <img
@@ -31,7 +31,7 @@ export function CameraPreview({ facingFront }: CameraPreviewProps) {
 
         {/* live badge */}
         <div className="absolute left-3 top-3 flex items-center gap-1.5 rounded-full bg-black/40 px-2.5 py-1 backdrop-blur">
-          <span className="size-1.5 animate-pulse rounded-full bg-amber-400" />
+          <span className="size-1.5 animate-pulse rounded-full bg-green-500" />
           <span className="text-[11px] font-medium tracking-wide text-white/90">LIVE</span>
         </div>
       </div>
