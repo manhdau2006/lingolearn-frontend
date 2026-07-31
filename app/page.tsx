@@ -45,7 +45,7 @@ export default function Home() {
       <section className="relative z-10 flex flex-1 flex-col items-center justify-center px-6">
         <CameraPreview facingFront={facingFront} />
         <p className="mt-6 text-balance text-center text-sm text-neutral-400">
-          Hướng camera vào vật thể để học từ vựng
+          Chụp vật thể để dịch từ vựng
         </p>
       </section>
 
