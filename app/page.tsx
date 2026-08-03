@@ -2,9 +2,9 @@
 
 import { useRef, useState } from "react"
 import { TopBar } from "@/components/camera/top-bar"
-import { MenuDrawer } from "@/components/camera/menu-drawer"
 import { CameraPreview } from "@/components/camera/camera-preview"
 import { BottomBar } from "@/components/camera/bottom-bar"
+import { MenuDrawer } from "@/components/camera/menu-drawer"
 import { CaptureModal } from "@/components/camera/capture-modal"
 import type { LanguagePair, Recognition } from "@/lib/vocab"
 import { LANGUAGE_PAIRS, recognizeSample } from "@/lib/vocab"
@@ -36,12 +36,14 @@ export default function Home() {
         className="pointer-events-none absolute inset-x-0 top-24 -z-0 mx-auto h-72 w-72 rounded-full bg-amber-500/20 blur-3xl"
       />
 
+      {/* 1. Top Bar */}
       <TopBar
         onOpenMenu={() => setDrawerOpen(true)}
         languagePair={languagePair}
         onChangeLanguage={setLanguagePair}
       />
 
+      {/* 2. Camera Preview */}
       <section className="relative z-10 flex flex-1 flex-col items-center justify-center px-6">
         <CameraPreview facingFront={facingFront} />
         <p className="mt-6 text-balance text-center text-sm text-neutral-400">
@@ -49,6 +51,7 @@ export default function Home() {
         </p>
       </section>
 
+      {/* 3. Bottom Bar */}
       <BottomBar
         onCapture={handleCapture}
         onFlip={() => setFacingFront((v) => !v)}
@@ -63,8 +66,10 @@ export default function Home() {
         onChange={handleGallery}
       />
 
+      {/* Menu Drawer (shadcn Sheet - slide left) */}
       <MenuDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
 
+      {/* Capture Modal (shadcn Dialog - capture result popup) */}
       <CaptureModal
         data={captured}
         languagePair={languagePair}
@@ -77,3 +82,4 @@ export default function Home() {
     </main>
   )
 }
+

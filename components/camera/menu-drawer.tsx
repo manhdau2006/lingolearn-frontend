@@ -1,7 +1,7 @@
 "use client"
 
-import { useEffect } from "react"
-import { X, BookMarked, Layers, ChevronRight } from "lucide-react"
+import { BookMarked, Layers, ChevronRight } from "lucide-react"
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet"
 
 type MenuDrawerProps = {
   open: boolean
@@ -9,54 +9,20 @@ type MenuDrawerProps = {
 }
 
 const LINKS = [
-  { label: "Từ vựng đã lưu", description: "Bộ sưu tập từ của bạn", icon: BookMarked, href: "#" },
-  { label: "Flashcard", description: "Ôn tập theo thẻ ghi nhớ", icon: Layers, href: "#" },
+  { label: "Từ vựng đã lưu", description: "Bộ sưu tập từ của bạn", icon: BookMarked, href: "/saved" },
+  { label: "Flashcard", description: "Ôn tập theo thẻ ghi nhớ", icon: Layers, href: "/flashcards" },
 ]
 
 export function MenuDrawer({ open, onClose }: MenuDrawerProps) {
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose()
-    }
-    if (open) document.addEventListener("keydown", onKey)
-    return () => document.removeEventListener("keydown", onKey)
-  }, [open, onClose])
-
   return (
-    <div className={`fixed inset-0 z-50 ${open ? "" : "pointer-events-none"}`} aria-hidden={!open}>
-      {/* backdrop */}
-      <div
-        onClick={onClose}
-        className={`absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${
-          open ? "opacity-100" : "opacity-0"
-        }`}
-      />
+    <Sheet open={open} onOpenChange={(isOpen) => { if (!isOpen) onClose() }}>
+      <SheetContent side="left" className="w-[82%] max-w-xs border-r border-neutral-800 bg-neutral-900 p-0 text-neutral-50 sm:max-w-xs">
+        <SheetHeader className="px-5 pt-6 pb-4 border-b border-neutral-800/50 text-left">
+          <SheetTitle className="text-lg font-semibold text-neutral-50">LingoLens</SheetTitle>
+          <SheetDescription className="text-sm text-neutral-400">Học từ vựng qua ống kính</SheetDescription>
+        </SheetHeader>
 
-      {/* panel */}
-      <aside
-        role="dialog"
-        aria-label="Menu điều hướng"
-        aria-modal="true"
-        className={`absolute inset-y-0 left-0 flex w-[82%] max-w-xs flex-col bg-neutral-900 shadow-2xl transition-transform duration-300 ease-out ${
-          open ? "translate-x-0" : "-translate-x-full"
-        }`}
-      >
-        <div className="flex items-center justify-between px-5 pt-6 pb-4">
-          <div>
-            <p className="text-lg font-semibold text-neutral-50">LingoLens</p>
-            <p className="text-sm text-neutral-400">Học từ vựng qua ống kính</p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Đóng menu"
-            className="flex size-9 items-center justify-center rounded-full bg-neutral-800 text-neutral-300 transition-colors hover:bg-neutral-700 active:scale-95"
-          >
-            <X className="size-5" />
-          </button>
-        </div>
-
-        <nav className="flex flex-col gap-2 px-3 pt-2">
+        <nav className="flex flex-col gap-2 px-3 pt-4">
           {LINKS.map((link) => (
             <a
               key={link.label}
@@ -74,7 +40,8 @@ export function MenuDrawer({ open, onClose }: MenuDrawerProps) {
             </a>
           ))}
         </nav>
-      </aside>
-    </div>
+      </SheetContent>
+    </Sheet>
   )
 }
+
