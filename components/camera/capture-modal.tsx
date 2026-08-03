@@ -1,9 +1,10 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Volume2, Bookmark, RotateCcw, Check } from "lucide-react"
+import { Volume2, Bookmark, RotateCcw, Check, FolderPlus } from "lucide-react"
 import type { LanguagePair, Recognition } from "@/lib/vocab"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 type CaptureModalProps = {
   data: { image: string; recognition: Recognition } | null
@@ -12,11 +13,24 @@ type CaptureModalProps = {
   onRetake: () => void
 }
 
+const MOCK_FOLDERS = [
+  { id: "untitled1", name: "#untitled1" },
+  { id: "untitled2", name: "#untitled2" },
+  { id: "phong-khach", name: "#phòng_khách" },
+  { id: "ngoai-troi", name: "#ngoài_trời" },
+  { id: "cong-so", name: "#công_sở" },
+  { id: "du-lich", name: "#du_lịch" },
+]
+
 export function CaptureModal({ data, languagePair, onClose, onRetake }: CaptureModalProps) {
   const [saved, setSaved] = useState(false)
+  const [selectedFolder, setSelectedFolder] = useState<string | null>(null)
 
   useEffect(() => {
-    if (data) setSaved(false)
+    if (data) {
+      setSaved(false)
+      setSelectedFolder(null)
+    }
   }, [data])
 
   function speak() {
@@ -25,6 +39,12 @@ export function CaptureModal({ data, languagePair, onClose, onRetake }: CaptureM
     utter.lang = languagePair.speechLocale
     window.speechSynthesis.cancel()
     window.speechSynthesis.speak(utter)
+  }
+
+  const handleSelectFolder = (val: unknown) => {
+    if (typeof val === "string") {
+      setSelectedFolder(val)
+    }
   }
 
   const recognition = data?.recognition
@@ -71,8 +91,32 @@ export function CaptureModal({ data, languagePair, onClose, onRetake }: CaptureM
               </div>
             </div>
 
+            {/* Folder selection dropdown */}
+            <div className="mt-5 flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-neutral-400">Chọn thư mục để lưu...</label>
+              <Select value={selectedFolder || undefined} onValueChange={handleSelectFolder}>
+                <SelectTrigger className="w-full justify-between rounded-2xl border border-neutral-800 bg-neutral-800/80 px-4 py-3 text-sm text-neutral-200">
+                  <SelectValue placeholder="Chọn thư mục để lưu..." />
+                </SelectTrigger>
+                <SelectContent className="w-full border-neutral-800 bg-neutral-900 text-neutral-100">
+                  {MOCK_FOLDERS.map((folder) => (
+                    <SelectItem key={folder.id} value={folder.id}>
+                      {folder.name}
+                    </SelectItem>
+                  ))}
+                  <div className="my-1 border-t border-neutral-800" />
+                  <SelectItem value="create_new" className="font-semibold text-amber-400 hover:text-amber-300">
+                    <span className="flex items-center gap-1.5">
+                      <FolderPlus className="size-4" />
+                      + Tạo thư mục mới
+                    </span>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             {/* actions */}
-            <div className="mt-6 flex gap-3">
+            <div className="mt-4 flex gap-3">
               <button
                 type="button"
                 onClick={() => setSaved(true)}
@@ -101,4 +145,5 @@ export function CaptureModal({ data, languagePair, onClose, onRetake }: CaptureM
     </Dialog>
   )
 }
+
 
