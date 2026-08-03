@@ -1,8 +1,8 @@
-export default function DashboardPage() {
+export default function FlashcardsPage() {
   return (
-    <div className="p-8">
-      <h1 className="text-2xl font-bold">LingoLearn Dashboard</h1>
-      <p className="text-gray-600 mt-2">Trang tổng quan đang được phát triển...</p>
+    <div className="p-4 flex flex-col items-center justify-center h-screen">
+      <h1 className="text-xl font-bold mb-4">Luyện tập Flashcard</h1>
+      {/* Component Flashcard sẽ được thêm sau */}
     </div>
   );
 }
