@@ -1,6 +1,7 @@
 "use client"
 
-import { BookMarked, Layers, ChevronRight } from "lucide-react"
+import Link from "next/link"
+import { Camera, BookMarked, Layers, ChevronRight } from "lucide-react"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet"
 
 type MenuDrawerProps = {
@@ -9,8 +10,9 @@ type MenuDrawerProps = {
 }
 
 const LINKS = [
+  { label: "Trang chủ", description: "Camera dịch từ vựng", icon: Camera, href: "/" },
   { label: "Từ vựng đã lưu", description: "Bộ sưu tập từ của bạn", icon: BookMarked, href: "/saved" },
-  { label: "Flashcard", description: "Ôn tập theo thẻ ghi nhớ", icon: Layers, href: "/flashcards" },
+  { label: "Flashcards", description: "Ôn tập theo thẻ ghi nhớ", icon: Layers, href: "/flashcards" },
 ]
 
 export function MenuDrawer({ open, onClose }: MenuDrawerProps) {
@@ -24,9 +26,10 @@ export function MenuDrawer({ open, onClose }: MenuDrawerProps) {
 
         <nav className="flex flex-col gap-2 px-3 pt-4">
           {LINKS.map((link) => (
-            <a
+            <Link
               key={link.label}
               href={link.href}
+              onClick={onClose}
               className="group flex items-center gap-3 rounded-2xl bg-neutral-800/50 px-3 py-3.5 transition-colors hover:bg-neutral-800"
             >
               <span className="flex size-11 items-center justify-center rounded-xl bg-amber-500/15 text-amber-400">
@@ -37,11 +40,12 @@ export function MenuDrawer({ open, onClose }: MenuDrawerProps) {
                 <span className="block text-xs text-neutral-400">{link.description}</span>
               </span>
               <ChevronRight className="size-4 text-neutral-500 transition-transform group-hover:translate-x-0.5" />
-            </a>
+            </Link>
           ))}
         </nav>
       </SheetContent>
     </Sheet>
   )
 }
+
 
