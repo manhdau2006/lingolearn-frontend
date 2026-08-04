@@ -1,9 +1,11 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { Volume2, Bookmark, RotateCcw, Check, FolderPlus, ChevronDown, RefreshCw } from "lucide-react"
+import { Volume2, Bookmark, RotateCcw, Check, FolderPlus, ChevronDown } from "lucide-react"
+import { toast } from "sonner"
 import type { LanguagePair, Recognition } from "@/lib/vocab"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { useAppStore } from "@/lib/store"
 
 type CaptureModalProps = {
   data: { image: string; recognition: Recognition } | null
@@ -12,33 +14,12 @@ type CaptureModalProps = {
   onRetake: () => void
 }
 
-type FolderItem = {
-  id: string
-  name: string
-}
-
-const INITIAL_FOLDERS: FolderItem[] = [
-  { id: "unsaved", name: "#unsaved (Mặc định)" },
-  { id: "untitled1", name: "#untitled1" },
-  { id: "untitled2", name: "#untitled2" },
-  { id: "phong-khach", name: "#phòng_khách" },
-  { id: "ngoai-troi", name: "#ngoài_trời" },
-  { id: "cong-so", name: "#công_sở" },
-  { id: "du-lich", name: "#du_lịch" },
-]
-
-function areFoldersEqual(a: string[], b: string[]) {
-  if (a.length !== b.length) return false
-  const sortedA = [...a].sort()
-  const sortedB = [...b].sort()
-  return sortedA.every((val, index) => val === sortedB[index])
-}
-
 export function CaptureModal({ data, languagePair, onClose, onRetake }: CaptureModalProps) {
-  const [folders, setFolders] = useState<FolderItem[]>(INITIAL_FOLDERS)
+  const folders = useAppStore((state) => state.folders)
+  const addFolder = useAppStore((state) => state.addFolder)
+  const addVocabulary = useAppStore((state) => state.addVocabulary)
+
   const [selectedFolderIds, setSelectedFolderIds] = useState<string[]>([])
-  const [savedFolders, setSavedFolders] = useState<string[]>([])
-  const [isSaved, setIsSaved] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [isCreatingNew, setIsCreatingNew] = useState(false)
   const [newFolderName, setNewFolderName] = useState("")
@@ -47,8 +28,6 @@ export function CaptureModal({ data, languagePair, onClose, onRetake }: CaptureM
 
   useEffect(() => {
     if (data) {
-      setIsSaved(false)
-      setSavedFolders([])
       setSelectedFolderIds([])
       setDropdownOpen(false)
       setIsCreatingNew(false)
@@ -84,34 +63,40 @@ export function CaptureModal({ data, languagePair, onClose, onRetake }: CaptureM
 
   const handleCreateNewFolder = () => {
     if (!newFolderName.trim()) return
-    const formattedName = newFolderName.startsWith("#") ? newFolderName.trim() : `#${newFolderName.trim()}`
-    const newId = `folder_${Date.now()}`
-    const newFolder: FolderItem = { id: newId, name: formattedName }
+    const cleanName = newFolderName.trim()
+    const hash = cleanName.startsWith("#") ? cleanName : `#${cleanName.replace(/\s+/g, "_").toLowerCase()}`
+    const id = cleanName.replace(/\s+/g, "-").toLowerCase() + `-${Date.now()}`
 
-    setFolders((prev) => [...prev, newFolder])
-    setSelectedFolderIds((prev) => [...prev, newId])
+    addFolder({ id, name: cleanName, hash })
+    setSelectedFolderIds((prev) => [...prev, id])
     setNewFolderName("")
     setIsCreatingNew(false)
+    toast.success(`Đã tạo thư mục ${hash}`)
   }
 
-  const handleSaveOrUpdate = () => {
-    let finalFolders = [...selectedFolderIds]
-    
-    // Nếu chưa chọn thư mục nào, tự động cho vào thư mục mặc định mang tên "unsaved"
-    if (finalFolders.length === 0) {
-      finalFolders = ["unsaved"]
-      setSelectedFolderIds(["unsaved"])
-    }
+  const handleSave = () => {
+    if (!data) return
 
-    setSavedFolders(finalFolders)
-    setIsSaved(true)
+    const targetFolderIds = selectedFolderIds.length > 0 ? selectedFolderIds : ["unsaved"]
+
+    targetFolderIds.forEach((folderId) => {
+      addVocabulary({
+        folderId,
+        originalWord: data.recognition.source,
+        partOfSpeech: data.recognition.partOfSpeech,
+        translatedWord: data.recognition.translation,
+        ipa: data.recognition.ipa,
+        image: data.image || "/chair-preview.png",
+      })
+    })
+
+    toast.success(`Đã lưu "${data.recognition.source}" vào bộ sưu tập!`)
+    onClose()
   }
-
-  const isModified = isSaved && !areFoldersEqual(selectedFolderIds, savedFolders)
 
   const selectedDisplayNames = folders
     .filter((f) => selectedFolderIds.includes(f.id))
-    .map((f) => f.name)
+    .map((f) => f.hash)
     .join(", ")
 
   const recognition = data?.recognition
@@ -160,7 +145,7 @@ export function CaptureModal({ data, languagePair, onClose, onRetake }: CaptureM
 
             {/* Multi-select Folder Dropdown */}
             <div className="relative mt-4 flex flex-col gap-1" ref={dropdownRef}>
-              <label className="text-[11px] font-medium text-neutral-400">Chọn thư mục lưu trữ (Chọn nhiều):</label>
+              <label className="text-[11px] font-medium text-neutral-400">Chọn thư mục lưu trữ:</label>
               
               <button
                 type="button"
@@ -168,7 +153,7 @@ export function CaptureModal({ data, languagePair, onClose, onRetake }: CaptureM
                 className="flex w-full items-center justify-between rounded-xl border border-neutral-800 bg-neutral-800/80 px-3.5 py-2.5 text-left text-xs text-neutral-200 transition-colors hover:bg-neutral-800 focus:outline-none focus:ring-1 focus:ring-amber-400/50"
               >
                 <span className={`truncate ${selectedFolderIds.length === 0 ? "text-neutral-500" : "text-neutral-100 font-medium"}`}>
-                  {selectedFolderIds.length === 0 ? "Chọn thư mục để lưu..." : selectedDisplayNames}
+                  {selectedFolderIds.length === 0 ? "Chọn thư mục (Mặc định: #unsaved)" : selectedDisplayNames}
                 </span>
                 <ChevronDown className={`size-3.5 shrink-0 text-neutral-400 transition-transform duration-200 ${dropdownOpen ? "rotate-180" : ""}`} />
               </button>
@@ -190,7 +175,7 @@ export function CaptureModal({ data, languagePair, onClose, onRetake }: CaptureM
                               : "text-neutral-200 hover:bg-neutral-800"
                           }`}
                         >
-                          <span className="truncate">{folder.name}</span>
+                          <span className="truncate">{folder.hash}</span>
                           {isChecked && <Check className="size-3.5 shrink-0 text-amber-400" />}
                         </button>
                       )
@@ -239,31 +224,11 @@ export function CaptureModal({ data, languagePair, onClose, onRetake }: CaptureM
             <div className="mt-3.5 flex gap-2.5">
               <button
                 type="button"
-                onClick={handleSaveOrUpdate}
-                className={`flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-semibold transition-all active:scale-[0.98] ${
-                  !isSaved
-                    ? "bg-amber-400 text-neutral-900 hover:bg-amber-300"
-                    : isModified
-                    ? "bg-amber-500 text-neutral-900 hover:bg-amber-400 ring-2 ring-amber-400/50"
-                    : "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
-                }`}
+                onClick={handleSave}
+                className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-amber-400 px-3 py-2.5 text-xs font-semibold text-neutral-900 transition-all hover:bg-amber-300 active:scale-[0.98]"
               >
-                {!isSaved ? (
-                  <>
-                    <Bookmark className="size-4" />
-                    Lưu vào bộ sưu tập
-                  </>
-                ) : isModified ? (
-                  <>
-                    <RefreshCw className="size-4" />
-                    Cập nhật
-                  </>
-                ) : (
-                  <>
-                    <Check className="size-4" />
-                    Đã lưu
-                  </>
-                )}
+                <Bookmark className="size-4" />
+                Lưu vào bộ sưu tập
               </button>
 
               <button
@@ -281,6 +246,7 @@ export function CaptureModal({ data, languagePair, onClose, onRetake }: CaptureM
     </Dialog>
   )
 }
+
 
 
 
