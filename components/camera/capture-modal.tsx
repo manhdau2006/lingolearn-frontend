@@ -6,6 +6,7 @@ import { toast } from "sonner"
 import type { LanguagePair } from "@/lib/vocab"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { useAppStore } from "@/lib/store"
+import { playAudio } from "@/lib/audio"
 
 export type CaptureData = {
   imageUrl: string
@@ -54,14 +55,6 @@ export function CaptureModal({ data, languagePair, onClose, onRetake }: CaptureM
     }
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [dropdownOpen])
-
-  function speak() {
-    if (!data || typeof window === "undefined" || !window.speechSynthesis) return
-    const utter = new SpeechSynthesisUtterance(data.translatedWord)
-    utter.lang = languagePair.speechLocale
-    window.speechSynthesis.cancel()
-    window.speechSynthesis.speak(utter)
-  }
 
   const toggleFolderSelect = (folderId: string) => {
     setSelectedFolderIds((prev) =>
@@ -157,9 +150,9 @@ export function CaptureModal({ data, languagePair, onClose, onRetake }: CaptureM
                   </span>
                   <button
                     type="button"
-                    onClick={speak}
+                    onClick={() => playAudio(data.translatedWord, languagePair?.speechLocale || "en-US")}
                     aria-label="Nghe phát âm"
-                    className="flex size-7 shrink-0 items-center justify-center rounded-full bg-amber-500/15 text-amber-400 transition-all hover:bg-amber-500/25 active:scale-95"
+                    className="flex size-7 shrink-0 items-center justify-center rounded-full bg-amber-500/15 text-amber-400 transition-all hover:bg-amber-500/25 active:scale-95 cursor-pointer"
                   >
                     <Volume2 className="size-4" />
                   </button>

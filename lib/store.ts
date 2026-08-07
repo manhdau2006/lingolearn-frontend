@@ -30,6 +30,12 @@ type StoreState = {
   // Vocabulary Actions
   addVocabulary: (vocab: Omit<Vocabulary, "id" | "createdAt">) => void
   deleteVocabulary: (id: string) => void
+  duplicateVocabulary: (id: string) => void
+  moveVocabulary: (id: string, newFolderId: string) => void
+  deleteMultipleVocabularies: (ids: string[]) => void
+  moveMultipleVocabularies: (ids: string[], newFolderId: string) => void
+  copyVocabularyToFolder: (id: string, targetFolderId: string) => void
+  copyMultipleVocabulariesToFolder: (ids: string[], targetFolderId: string) => void
 }
 
 const DEFAULT_FOLDERS: Folder[] = [
@@ -100,6 +106,84 @@ export const useAppStore = create<StoreState>()(
         set((state) => ({
           vocabularies: state.vocabularies.filter((v) => v.id !== id),
         }))
+      },
+
+      duplicateVocabulary: (id: string) => {
+        set((state) => {
+          const target = state.vocabularies.find((v) => v.id === id)
+          if (!target) return state
+
+          const duplicateItem: Vocabulary = {
+            ...target,
+            id: `vocab_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+            createdAt: Date.now(),
+          }
+
+          return {
+            vocabularies: [duplicateItem, ...state.vocabularies],
+          }
+        })
+      },
+
+      moveVocabulary: (id: string, newFolderId: string) => {
+        set((state) => ({
+          vocabularies: state.vocabularies.map((v) =>
+            v.id === id ? { ...v, folderId: newFolderId } : v
+          ),
+        }))
+      },
+
+      deleteMultipleVocabularies: (ids: string[]) => {
+        if (!ids || ids.length === 0) return
+        set((state) => ({
+          vocabularies: state.vocabularies.filter((v) => !ids.includes(v.id)),
+        }))
+      },
+
+      moveMultipleVocabularies: (ids: string[], newFolderId: string) => {
+        if (!ids || ids.length === 0) return
+        set((state) => ({
+          vocabularies: state.vocabularies.map((v) =>
+            ids.includes(v.id) ? { ...v, folderId: newFolderId } : v
+          ),
+        }))
+      },
+
+      copyVocabularyToFolder: (id: string, targetFolderId: string) => {
+        set((state) => {
+          const target = state.vocabularies.find((v) => v.id === id)
+          if (!target) return state
+
+          const newCopy: Vocabulary = {
+            ...target,
+            id: `vocab_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+            folderId: targetFolderId,
+            createdAt: Date.now(),
+          }
+
+          return {
+            vocabularies: [newCopy, ...state.vocabularies],
+          }
+        })
+      },
+
+      copyMultipleVocabulariesToFolder: (ids: string[], targetFolderId: string) => {
+        if (!ids || ids.length === 0) return
+        set((state) => {
+          const targets = state.vocabularies.filter((v) => ids.includes(v.id))
+          if (targets.length === 0) return state
+
+          const newCopies: Vocabulary[] = targets.map((target, idx) => ({
+            ...target,
+            id: `vocab_${Date.now()}_${idx}_${Math.random().toString(36).substring(2, 7)}`,
+            folderId: targetFolderId,
+            createdAt: Date.now() + idx,
+          }))
+
+          return {
+            vocabularies: [...newCopies, ...state.vocabularies],
+          }
+        })
       },
     }),
     {
