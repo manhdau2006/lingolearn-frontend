@@ -19,7 +19,7 @@ export default function FolderDetailPage({
 
   // Lấy thông tin thư mục hiện tại
   const currentFolder = folders.find((f) => f.id === folderID)
-  const folderTitle = currentFolder ? currentFolder.hash : `#${folderID}`
+  const folderTitle = currentFolder ? currentFolder.name : `#${folderID}`
 
   // Lọc từ vựng thuộc thư mục hiện tại
   const folderVocabs = vocabularies.filter((v) => v.folderId === folderID)
@@ -88,12 +88,11 @@ export default function FolderDetailPage({
                   key={vocab.id}
                   className="flex items-center gap-3.5 rounded-2xl border border-neutral-800 bg-neutral-900/80 p-3 shadow-lg shadow-black/20 transition-colors hover:border-neutral-700"
                 >
-                  {/* Thumbnail ảnh đã chụp ở bên trái */}
+                  {/* Thumbnail ảnh thực tế vừa chụp (chuỗi base64) ở bên trái */}
                   <img
-                    src={vocab.image || "/chair-preview.png"}
+                    src={vocab.imageUrl}
                     alt={vocab.originalWord}
-                    crossOrigin="anonymous"
-                    className="size-16 shrink-0 rounded-xl object-cover ring-1 ring-white/10"
+                    className="w-16 h-16 shrink-0 rounded-xl object-cover ring-1 ring-white/10"
                   />
 
                   {/* Từ gốc & Từ dịch ở bên phải */}
@@ -102,9 +101,9 @@ export default function FolderDetailPage({
                       <h2 className="truncate text-base font-semibold text-neutral-50">
                         {vocab.originalWord}
                       </h2>
-                      {vocab.partOfSpeech && (
+                      {vocab.wordType && (
                         <span className="shrink-0 text-xs italic text-neutral-400">
-                          ({vocab.partOfSpeech})
+                          ({vocab.wordType})
                         </span>
                       )}
                     </div>
@@ -123,9 +122,11 @@ export default function FolderDetailPage({
                       </button>
                     </div>
 
-                    <p className="mt-0.5 font-mono text-[11px] text-neutral-400">
-                      {vocab.ipa}
-                    </p>
+                    {vocab.ipa && (
+                      <p className="mt-0.5 font-mono text-[11px] text-neutral-400">
+                        {vocab.ipa}
+                      </p>
+                    )}
                   </div>
 
                   {/* Action Xóa */}

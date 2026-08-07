@@ -71,15 +71,10 @@ export function CaptureModal({ data, languagePair, onClose, onRetake }: CaptureM
 
   const handleCreateNewFolder = () => {
     if (!newFolderName.trim()) return
-    const cleanName = newFolderName.trim()
-    const hash = cleanName.startsWith("#") ? cleanName : `#${cleanName.replace(/\s+/g, "_").toLowerCase()}`
-    const id = cleanName.replace(/\s+/g, "-").toLowerCase() + `-${Date.now()}`
-
-    addFolder({ id, name: cleanName, hash })
-    setSelectedFolderIds((prev) => [...prev, id])
+    addFolder(newFolderName.trim())
     setNewFolderName("")
     setIsCreatingNew(false)
-    toast.success(`Đã tạo thư mục ${hash}`)
+    toast.success("Đã tạo thư mục mới thành công")
   }
 
   const handleSave = () => {
@@ -91,20 +86,20 @@ export function CaptureModal({ data, languagePair, onClose, onRetake }: CaptureM
       addVocabulary({
         folderId,
         originalWord: data.originalWord,
-        partOfSpeech: data.wordType,
+        wordType: data.wordType,
         translatedWord: data.translatedWord,
         ipa: data.ipa,
-        image: data.imageUrl,
+        imageUrl: data.imageUrl,
       })
     })
 
-    toast.success(`Đã lưu "${data.originalWord}" vào bộ sưu tập!`)
+    toast.success("Đã lưu thành công")
     onClose()
   }
 
   const selectedDisplayNames = folders
     .filter((f) => selectedFolderIds.includes(f.id))
-    .map((f) => f.hash)
+    .map((f) => f.name)
     .join(", ")
 
   return (
@@ -194,7 +189,7 @@ export function CaptureModal({ data, languagePair, onClose, onRetake }: CaptureM
                 <ChevronDown className={`size-4 shrink-0 text-neutral-400 transition-transform duration-200 ${dropdownOpen ? "rotate-180" : ""}`} />
               </button>
 
-              {/* Dropdown Menu Content (opens upwards to stay nicely within bounds) */}
+              {/* Dropdown Menu Content */}
               {dropdownOpen && (
                 <div className="absolute bottom-full z-50 mb-1.5 w-full rounded-2xl border border-neutral-800 bg-neutral-900 p-1.5 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
                   <div className="max-h-36 overflow-y-auto space-y-0.5 pr-1">
@@ -211,7 +206,7 @@ export function CaptureModal({ data, languagePair, onClose, onRetake }: CaptureM
                               : "text-neutral-200 hover:bg-neutral-800"
                           }`}
                         >
-                          <span className="truncate">{folder.hash}</span>
+                          <span className="truncate">{folder.name}</span>
                           {isChecked && <Check className="size-3.5 shrink-0 text-amber-400" />}
                         </button>
                       )

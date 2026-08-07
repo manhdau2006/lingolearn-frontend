@@ -1,21 +1,20 @@
 import { create } from "zustand"
 import { persist, createJSONStorage } from "zustand/middleware"
 
-export type Folder = {
+export interface Folder {
   id: string
   name: string
-  hash: string
-  count?: number
+  createdAt: number
 }
 
-export type Vocabulary = {
+export interface Vocabulary {
   id: string
   folderId: string
   originalWord: string
-  partOfSpeech?: string
+  wordType: string
   translatedWord: string
   ipa: string
-  image: string
+  imageUrl: string
   createdAt: number
 }
 
@@ -23,60 +22,68 @@ type StoreState = {
   folders: Folder[]
   vocabularies: Vocabulary[]
 
-  // Actions cho Folder
-  addFolder: (folder: Folder) => void
-  renameFolder: (id: string, name: string, hash: string) => void
+  // Folder Actions
+  addFolder: (name: string) => void
   deleteFolder: (id: string) => void
+  updateFolder: (id: string, newName: string) => void
 
-  // Actions cho Từ vựng
+  // Vocabulary Actions
   addVocabulary: (vocab: Omit<Vocabulary, "id" | "createdAt">) => void
   deleteVocabulary: (id: string) => void
 }
 
-const INITIAL_FOLDERS: Folder[] = [
-  { id: "unsaved", name: "Chưa phân loại", hash: "#unsaved" },
-  { id: "phong-khach", name: "Phòng khách", hash: "#phòng_khách" },
-  { id: "ngoai-troi", name: "Ngoài trời", hash: "#ngoài_trời" },
-  { id: "cong-so", name: "Công sở", hash: "#công_sở" },
-  { id: "du-lich", name: "Du lịch", hash: "#du_lịch" },
-  { id: "hoc-tap", name: "Học tập", hash: "#học_tập" },
-  { id: "untitled1", name: "Thư mục 1", hash: "#untitled1" },
+const DEFAULT_FOLDERS: Folder[] = [
+  { id: "unsaved", name: "#unsaved", createdAt: Date.now() },
+  { id: "phong-khach", name: "#phòng_khách", createdAt: Date.now() - 1000 },
+  { id: "ngoai-troi", name: "#ngoài_trời", createdAt: Date.now() - 2000 },
+  { id: "cong-so", name: "#công_sở", createdAt: Date.now() - 3000 },
 ]
 
 export const useAppStore = create<StoreState>()(
   persist(
     (set) => ({
-      folders: INITIAL_FOLDERS,
-      vocabularies: [
-        {
-          id: "demo-1",
-          folderId: "phong-khach",
-          originalWord: "Cái ghế",
-          partOfSpeech: "danh từ",
-          translatedWord: "Chair",
-          ipa: "/tʃeər/",
-          image: "/chair-preview.png",
+      folders: DEFAULT_FOLDERS,
+      vocabularies: [],
+
+      addFolder: (name: string) => {
+        const cleanName = name.trim()
+        if (!cleanName) return
+        const formattedName = cleanName.startsWith("#")
+          ? cleanName
+          : `#${cleanName.replace(/\s+/g, "_").toLowerCase()}`
+        const id = cleanName.replace(/\s+/g, "-").toLowerCase() + `-${Date.now()}`
+
+        const newFolder: Folder = {
+          id,
+          name: formattedName,
           createdAt: Date.now(),
-        },
-      ],
+        }
 
-      addFolder: (folder) =>
         set((state) => ({
-          folders: [folder, ...state.folders],
-        })),
+          folders: [newFolder, ...state.folders],
+        }))
+      },
 
-      renameFolder: (id, name, hash) =>
-        set((state) => ({
-          folders: state.folders.map((f) =>
-            f.id === id ? { ...f, name, hash } : f
-          ),
-        })),
-
-      deleteFolder: (id) =>
+      deleteFolder: (id: string) => {
         set((state) => ({
           folders: state.folders.filter((f) => f.id !== id),
           vocabularies: state.vocabularies.filter((v) => v.folderId !== id),
-        })),
+        }))
+      },
+
+      updateFolder: (id: string, newName: string) => {
+        const cleanName = newName.trim()
+        if (!cleanName) return
+        const formattedName = cleanName.startsWith("#")
+          ? cleanName
+          : `#${cleanName.replace(/\s+/g, "_").toLowerCase()}`
+
+        set((state) => ({
+          folders: state.folders.map((f) =>
+            f.id === id ? { ...f, name: formattedName } : f
+          ),
+        }))
+      },
 
       addVocabulary: (vocabData) => {
         const newVocab: Vocabulary = {
@@ -89,10 +96,11 @@ export const useAppStore = create<StoreState>()(
         }))
       },
 
-      deleteVocabulary: (id) =>
+      deleteVocabulary: (id: string) => {
         set((state) => ({
           vocabularies: state.vocabularies.filter((v) => v.id !== id),
-        })),
+        }))
+      },
     }),
     {
       name: "lingolearn-storage",

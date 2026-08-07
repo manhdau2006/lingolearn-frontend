@@ -24,7 +24,7 @@ export default function SavedFoldersPage() {
   const folders = useAppStore((state) => state.folders)
   const vocabularies = useAppStore((state) => state.vocabularies)
   const addFolder = useAppStore((state) => state.addFolder)
-  const renameFolder = useAppStore((state) => state.renameFolder)
+  const updateFolder = useAppStore((state) => state.updateFolder)
   const deleteFolder = useAppStore((state) => state.deleteFolder)
 
   // Dialog States
@@ -41,34 +41,27 @@ export default function SavedFoldersPage() {
   // Create folder handler
   const handleCreateFolder = () => {
     if (!newFolderName.trim()) return
-    const cleanName = newFolderName.trim()
-    const hash = cleanName.startsWith("#") ? cleanName : `#${cleanName.replace(/\s+/g, "_").toLowerCase()}`
-    const id = cleanName.replace(/\s+/g, "-").toLowerCase() + `-${Date.now()}`
-
-    addFolder({ id, name: cleanName, hash })
+    addFolder(newFolderName.trim())
     setNewFolderName("")
     setCreateDialogOpen(false)
-    toast.success(`Đã tạo thư mục ${hash}`)
+    toast.success("Đã tạo thư mục thành công")
   }
 
   // Rename folder handler
   const handleRenameFolder = () => {
     if (!editingFolder || !renameInput.trim()) return
-    const cleanName = renameInput.trim()
-    const hash = cleanName.startsWith("#") ? cleanName : `#${cleanName.replace(/\s+/g, "_").toLowerCase()}`
-
-    renameFolder(editingFolder.id, cleanName, hash)
+    updateFolder(editingFolder.id, renameInput.trim())
     setEditingFolder(null)
     setRenameInput("")
     setRenameDialogOpen(false)
-    toast.success(`Đã đổi tên thư mục thành ${hash}`)
+    toast.success("Đã cập nhật tên thư mục thành công")
   }
 
   // Delete folder handler
   const handleDeleteFolder = () => {
     if (!deletingFolder) return
     deleteFolder(deletingFolder.id)
-    toast.success(`Đã xóa thư mục ${deletingFolder.hash}`)
+    toast.success(`Đã xóa thư mục ${deletingFolder.name}`)
     setDeletingFolder(null)
     setDeleteDialogOpen(false)
   }
@@ -157,19 +150,14 @@ export default function SavedFoldersPage() {
 
                   {/* Clickable Card Link area */}
                   <Link href={`/saved/${folder.id}`} className="block flex-1 pt-1">
-                    {/* Icon & Hash */}
+                    {/* Icon & Folder Name */}
                     <div className="mb-3 flex items-center justify-between pr-6">
                       <div className="flex size-9 items-center justify-center rounded-xl bg-amber-100 text-amber-600 transition-colors group-hover:bg-amber-500 group-hover:text-white">
                         <Folder className="size-5" />
                       </div>
                     </div>
 
-                    {/* Hash tag badge */}
-                    <span className="mb-1 block text-xs font-semibold text-amber-600">
-                      {folder.hash}
-                    </span>
-
-                    {/* Folder Title */}
+                    {/* Folder Title / Hash */}
                     <h2 className="line-clamp-1 text-base font-semibold text-neutral-900 group-hover:text-amber-600">
                       {folder.name}
                     </h2>
