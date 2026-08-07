@@ -1,14 +1,22 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { Volume2, Bookmark, RotateCcw, Check, FolderPlus, ChevronDown } from "lucide-react"
+import { Volume2, Bookmark, RotateCcw, Check, FolderPlus, ChevronDown, X } from "lucide-react"
 import { toast } from "sonner"
-import type { LanguagePair, Recognition } from "@/lib/vocab"
+import type { LanguagePair } from "@/lib/vocab"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { useAppStore } from "@/lib/store"
 
+export type CaptureData = {
+  imageUrl: string
+  originalWord: string
+  wordType: string
+  translatedWord: string
+  ipa: string
+}
+
 type CaptureModalProps = {
-  data: { image: string; recognition: Recognition } | null
+  data: CaptureData | null
   languagePair: LanguagePair
   onClose: () => void
   onRetake: () => void
@@ -49,7 +57,7 @@ export function CaptureModal({ data, languagePair, onClose, onRetake }: CaptureM
 
   function speak() {
     if (!data || typeof window === "undefined" || !window.speechSynthesis) return
-    const utter = new SpeechSynthesisUtterance(data.recognition.translation)
+    const utter = new SpeechSynthesisUtterance(data.translatedWord)
     utter.lang = languagePair.speechLocale
     window.speechSynthesis.cancel()
     window.speechSynthesis.speak(utter)
@@ -82,15 +90,15 @@ export function CaptureModal({ data, languagePair, onClose, onRetake }: CaptureM
     targetFolderIds.forEach((folderId) => {
       addVocabulary({
         folderId,
-        originalWord: data.recognition.source,
-        partOfSpeech: data.recognition.partOfSpeech,
-        translatedWord: data.recognition.translation,
-        ipa: data.recognition.ipa,
-        image: data.image || "/chair-preview.png",
+        originalWord: data.originalWord,
+        partOfSpeech: data.wordType,
+        translatedWord: data.translatedWord,
+        ipa: data.ipa,
+        image: data.imageUrl,
       })
     })
 
-    toast.success(`Đã lưu "${data.recognition.source}" vào bộ sưu tập!`)
+    toast.success(`Đã lưu "${data.originalWord}" vào bộ sưu tập!`)
     onClose()
   }
 
@@ -99,69 +107,97 @@ export function CaptureModal({ data, languagePair, onClose, onRetake }: CaptureM
     .map((f) => f.hash)
     .join(", ")
 
-  const recognition = data?.recognition
-  const image = data?.image
-
   return (
     <Dialog open={!!data} onOpenChange={(open) => { if (!open) onClose() }}>
-      <DialogContent className="top-[40%] w-[82%] max-w-xs -translate-y-1/2 rounded-3xl border-neutral-800 bg-neutral-900 p-4 text-neutral-50 sm:max-w-xs">
-        {data && recognition && (
-          <>
+      <DialogContent
+        showCloseButton={false}
+        className="fixed top-1/2 left-1/2 z-50 flex flex-col justify-between w-[81%] max-w-[21rem] min-h-[27rem] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-3xl border border-neutral-800 bg-neutral-900/95 p-5 text-neutral-50 shadow-2xl backdrop-blur-xl"
+      >
+        {data && (
+          <div className="relative flex flex-1 flex-col justify-between gap-4">
+            {/* Header Title hidden for accessibility */}
             <DialogHeader className="sr-only">
               <DialogTitle>Kết quả nhận diện từ vựng</DialogTitle>
               <DialogDescription>Chi tiết từ vựng và phiên âm</DialogDescription>
             </DialogHeader>
 
-            <div className="flex gap-3 pt-1">
-              {/* thumbnail */}
+            {/* Custom Close Button */}
+            <button
+              type="button"
+              onClick={onClose}
+              className="absolute -right-1 -top-1 z-20 flex size-7 items-center justify-center rounded-full bg-neutral-800/80 text-neutral-400 transition-colors hover:bg-neutral-700 hover:text-white"
+              aria-label="Đóng"
+            >
+              <X className="size-4" />
+            </button>
+
+            {/* Top Main Section: Centered Thumbnail & Vocab Info */}
+            <div className="flex flex-col items-center gap-3 pt-1 text-center">
+              {/* Thumbnail Image */}
               <img
-                src={image || "/chair-preview.png"}
-                alt="Ảnh vừa chụp"
+                src={data.imageUrl}
+                alt={data.originalWord}
                 crossOrigin="anonymous"
-                className="size-18 shrink-0 rounded-xl object-cover ring-1 ring-white/10"
+                className="size-20 shrink-0 rounded-2xl object-cover ring-2 ring-white/15 shadow-xl"
               />
 
-              <div className="flex min-w-0 flex-1 flex-col justify-center">
-                <div className="flex items-baseline gap-1.5">
-                  <h2 className="truncate text-xl font-semibold text-neutral-50">{recognition.source}</h2>
-                  <span className="shrink-0 text-xs italic text-neutral-400">({recognition.partOfSpeech})</span>
+              {/* Vocabulary Info */}
+              <div className="flex w-full flex-col items-center gap-1 min-w-0 px-1">
+                {/* Original Word & Word Type */}
+                <div className="flex flex-wrap items-center justify-center gap-1.5 min-w-0 w-full">
+                  <h2 className="text-xl font-bold text-neutral-50 leading-tight break-words max-w-full text-center">
+                    {data.originalWord}
+                  </h2>
+                  {data.wordType && (
+                    <span className="shrink-0 text-xs italic text-neutral-400 font-normal">
+                      ({data.wordType})
+                    </span>
+                  )}
                 </div>
 
-                <div className="mt-0.5 flex items-center gap-1.5">
-                  <span className="text-base font-medium text-amber-400">{recognition.translation}</span>
+                {/* Translation & Pronunciation button */}
+                <div className="flex items-center justify-center gap-2 mt-1">
+                  <span className="text-lg font-bold text-amber-400 truncate max-w-[13rem]">
+                    {data.translatedWord}
+                  </span>
                   <button
                     type="button"
                     onClick={speak}
                     aria-label="Nghe phát âm"
-                    className="flex size-7 items-center justify-center rounded-full bg-amber-500/15 text-amber-400 transition-colors hover:bg-amber-500/25 active:scale-95"
+                    className="flex size-7 shrink-0 items-center justify-center rounded-full bg-amber-500/15 text-amber-400 transition-all hover:bg-amber-500/25 active:scale-95"
                   >
-                    <Volume2 className="size-3.5" />
+                    <Volume2 className="size-4" />
                   </button>
                 </div>
 
-                <p className="mt-0.5 font-mono text-xs text-neutral-400">{recognition.ipa}</p>
+                {/* IPA */}
+                {data.ipa && (
+                  <p className="font-mono text-xs text-neutral-400/90 truncate max-w-full">
+                    {data.ipa}
+                  </p>
+                )}
               </div>
             </div>
 
-            {/* Multi-select Folder Dropdown */}
-            <div className="relative mt-4 flex flex-col gap-1" ref={dropdownRef}>
+            {/* Middle Section: Multi-select Folder Dropdown */}
+            <div className="relative flex flex-col gap-1.5 my-auto" ref={dropdownRef}>
               <label className="text-[11px] font-medium text-neutral-400">Chọn thư mục lưu trữ:</label>
               
               <button
                 type="button"
                 onClick={() => setDropdownOpen((prev) => !prev)}
-                className="flex w-full items-center justify-between rounded-xl border border-neutral-800 bg-neutral-800/80 px-3.5 py-2.5 text-left text-xs text-neutral-200 transition-colors hover:bg-neutral-800 focus:outline-none focus:ring-1 focus:ring-amber-400/50"
+                className="flex w-full items-center justify-between rounded-2xl border border-neutral-800 bg-neutral-800/80 px-3.5 py-2.5 text-left text-xs text-neutral-200 transition-colors hover:bg-neutral-800 focus:outline-none focus:ring-1 focus:ring-amber-400/50"
               >
-                <span className={`truncate ${selectedFolderIds.length === 0 ? "text-neutral-500" : "text-neutral-100 font-medium"}`}>
+                <span className={`truncate pr-2 ${selectedFolderIds.length === 0 ? "text-neutral-400" : "text-neutral-100 font-medium"}`}>
                   {selectedFolderIds.length === 0 ? "Chọn thư mục (Mặc định: #unsaved)" : selectedDisplayNames}
                 </span>
-                <ChevronDown className={`size-3.5 shrink-0 text-neutral-400 transition-transform duration-200 ${dropdownOpen ? "rotate-180" : ""}`} />
+                <ChevronDown className={`size-4 shrink-0 text-neutral-400 transition-transform duration-200 ${dropdownOpen ? "rotate-180" : ""}`} />
               </button>
 
-              {/* Dropdown content */}
+              {/* Dropdown Menu Content (opens upwards to stay nicely within bounds) */}
               {dropdownOpen && (
-                <div className="absolute top-full z-50 mt-1 w-full rounded-xl border border-neutral-800 bg-neutral-900 p-1.5 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
-                  <div className="max-h-40 overflow-y-auto space-y-0.5 pr-1">
+                <div className="absolute bottom-full z-50 mb-1.5 w-full rounded-2xl border border-neutral-800 bg-neutral-900 p-1.5 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+                  <div className="max-h-36 overflow-y-auto space-y-0.5 pr-1">
                     {folders.map((folder) => {
                       const isChecked = selectedFolderIds.includes(folder.id)
                       return (
@@ -169,7 +205,7 @@ export function CaptureModal({ data, languagePair, onClose, onRetake }: CaptureM
                           key={folder.id}
                           type="button"
                           onClick={() => toggleFolderSelect(folder.id)}
-                          className={`flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-xs transition-colors ${
+                          className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-xs transition-colors ${
                             isChecked
                               ? "bg-amber-500/15 font-medium text-amber-300"
                               : "text-neutral-200 hover:bg-neutral-800"
@@ -195,13 +231,13 @@ export function CaptureModal({ data, languagePair, onClose, onRetake }: CaptureM
                         onKeyDown={(e) => {
                           if (e.key === "Enter") handleCreateNewFolder()
                         }}
-                        className="flex-1 rounded-lg border border-neutral-700 bg-neutral-800 px-2.5 py-1 text-xs text-neutral-100 placeholder-neutral-500 focus:outline-none focus:ring-1 focus:ring-amber-400"
+                        className="flex-1 rounded-xl border border-neutral-700 bg-neutral-800 px-2.5 py-1.5 text-xs text-neutral-100 placeholder-neutral-500 focus:outline-none focus:ring-1 focus:ring-amber-400"
                         autoFocus
                       />
                       <button
                         type="button"
                         onClick={handleCreateNewFolder}
-                        className="rounded-lg bg-amber-400 px-2.5 py-1 text-xs font-semibold text-neutral-900 hover:bg-amber-300"
+                        className="rounded-xl bg-amber-400 px-3 py-1.5 text-xs font-semibold text-neutral-900 hover:bg-amber-300"
                       >
                         Tạo
                       </button>
@@ -210,7 +246,7 @@ export function CaptureModal({ data, languagePair, onClose, onRetake }: CaptureM
                     <button
                       type="button"
                       onClick={() => setIsCreatingNew(true)}
-                      className="flex w-full items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-amber-400 transition-colors hover:bg-amber-500/10"
+                      className="flex w-full items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold text-amber-400 transition-colors hover:bg-amber-500/10"
                     >
                       <FolderPlus className="size-3.5" />
                       + Tạo thư mục mới
@@ -220,33 +256,29 @@ export function CaptureModal({ data, languagePair, onClose, onRetake }: CaptureM
               )}
             </div>
 
-            {/* Actions */}
-            <div className="mt-3.5 flex gap-2.5">
+            {/* Bottom Actions Section */}
+            <div className="flex flex-col gap-2 pt-1">
               <button
                 type="button"
                 onClick={handleSave}
-                className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-amber-400 px-3 py-2.5 text-xs font-semibold text-neutral-900 transition-all hover:bg-amber-300 active:scale-[0.98]"
+                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-amber-400 py-3 text-xs font-bold text-neutral-950 transition-all hover:bg-amber-300 active:scale-[0.98] shadow-lg shadow-amber-400/10"
               >
-                <Bookmark className="size-4" />
-                Lưu vào bộ sưu tập
+                <Bookmark className="size-4 shrink-0" />
+                <span className="truncate">Lưu vào bộ sưu tập</span>
               </button>
 
               <button
                 type="button"
                 onClick={onRetake}
-                className="flex items-center justify-center gap-1.5 rounded-xl bg-neutral-800 px-4 py-2.5 text-xs font-semibold text-neutral-100 transition-colors hover:bg-neutral-700 active:scale-[0.98]"
+                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-neutral-800 py-2.5 text-xs font-semibold text-neutral-200 transition-colors hover:bg-neutral-700 active:scale-[0.98]"
               >
-                <RotateCcw className="size-4" />
-                Chụp lại
+                <RotateCcw className="size-4 shrink-0" />
+                <span>Chụp lại</span>
               </button>
             </div>
-          </>
+          </div>
         )}
       </DialogContent>
     </Dialog>
   )
 }
-
-
-
-
