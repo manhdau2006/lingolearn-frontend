@@ -11,8 +11,10 @@ import { playAudio } from "@/lib/audio"
 export type CaptureData = {
   imageUrl: string
   originalWord: string
+  originalPhonetic?: string
   wordType: string
   translatedWord: string
+  translatedPhonetic?: string
   ipa: string
 }
 
@@ -130,40 +132,40 @@ export function CaptureModal({ data, languagePair, onClose, onRetake }: CaptureM
               />
 
               {/* Vocabulary Info */}
-              <div className="flex w-full flex-col items-center gap-1 min-w-0 px-1">
-                {/* Original Word & Word Type */}
-                <div className="flex flex-wrap items-center justify-center gap-1.5 min-w-0 w-full">
-                  <h2 className="text-xl font-bold text-neutral-50 leading-tight break-words max-w-full text-center">
+              <div className="flex w-full flex-col items-center gap-2.5 min-w-0 px-1">
+                {/* Original Word Card */}
+                <div className="flex flex-col items-center justify-center gap-1 w-full text-center bg-neutral-800/50 p-2.5 rounded-2xl border border-neutral-800">
+                  <h2 className="text-lg font-bold text-neutral-50 leading-tight break-words max-w-full text-center">
                     {data.originalWord}
                   </h2>
                   {data.wordType && (
-                    <span className="shrink-0 text-xs italic text-neutral-400 font-normal">
+                    <span className="text-[11px] italic text-neutral-400 font-normal">
                       ({data.wordType})
                     </span>
                   )}
                 </div>
 
-                {/* Translation & Pronunciation button */}
-                <div className="flex items-center justify-center gap-2 mt-1">
-                  <span className="text-lg font-bold text-amber-400 truncate max-w-[13rem]">
-                    {data.translatedWord}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => playAudio(data.translatedWord, languagePair?.speechLocale || "en-US")}
-                    aria-label="Nghe phát âm"
-                    className="flex size-7 shrink-0 items-center justify-center rounded-full bg-amber-500/15 text-amber-400 transition-all hover:bg-amber-500/25 active:scale-95 cursor-pointer"
-                  >
-                    <Volume2 className="size-4" />
-                  </button>
+                {/* Translated Word Card & Pronunciation */}
+                <div className="flex flex-col items-center gap-1 w-full text-center bg-amber-500/10 p-2.5 rounded-2xl border border-amber-500/20">
+                  <div className="flex items-center justify-center gap-2 min-w-0 w-full">
+                    <span className="text-lg font-bold text-amber-400 truncate max-w-[13rem]">
+                      {data.translatedWord}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => playAudio(data.translatedWord, languagePair.targetSpeechLocale || languagePair.speechLocale || "en-US")}
+                      aria-label="Nghe phát âm bản dịch"
+                      className="flex size-7 shrink-0 items-center justify-center rounded-full bg-amber-500/20 text-amber-400 transition-all hover:bg-amber-500/30 active:scale-95 cursor-pointer"
+                    >
+                      <Volume2 className="size-3.5" />
+                    </button>
+                  </div>
+                  {(data.translatedPhonetic || data.ipa) && (
+                    <p className="font-mono text-xs text-neutral-300 truncate max-w-full">
+                      {data.translatedPhonetic || data.ipa}
+                    </p>
+                  )}
                 </div>
-
-                {/* IPA */}
-                {data.ipa && (
-                  <p className="font-mono text-xs text-neutral-400/90 truncate max-w-full">
-                    {data.ipa}
-                  </p>
-                )}
               </div>
             </div>
 

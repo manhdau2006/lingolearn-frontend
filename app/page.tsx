@@ -7,15 +7,33 @@ import { CameraPreview, type CameraPreviewHandle } from "@/components/camera/cam
 import { BottomBar } from "@/components/camera/bottom-bar"
 import { MenuDrawer } from "@/components/camera/menu-drawer"
 import { CaptureModal, type CaptureData } from "@/components/camera/capture-modal"
-import type { LanguagePair } from "@/lib/vocab"
-import { LANGUAGE_PAIRS } from "@/lib/vocab"
+import { getLanguageByCode, type LanguagePair } from "@/lib/vocab"
+import { useAppStore } from "@/lib/store"
 
 export default function Home() {
   const [drawerOpen, setDrawerOpen] = useState(false)
-  const [languagePair, setLanguagePair] = useState<LanguagePair>(LANGUAGE_PAIRS[0])
   const [facingFront, setFacingFront] = useState(false)
   const [captured, setCaptured] = useState<CaptureData | null>(null)
   const [isCapturing, setIsCapturing] = useState(false)
+
+  const sourceLanguage = useAppStore((state) => state.sourceLanguage)
+  const targetLanguage = useAppStore((state) => state.targetLanguage)
+
+  const currentSource = getLanguageByCode(sourceLanguage)
+  const currentTarget = getLanguageByCode(targetLanguage)
+
+  const activeLanguagePair: LanguagePair = {
+    id: `${currentSource.code}-${currentTarget.code}`,
+    from: currentSource.label,
+    to: currentTarget.label,
+    fromCode: currentSource.code,
+    toCode: currentTarget.code,
+    fromShort: currentSource.shortLabel,
+    toShort: currentTarget.shortLabel,
+    sourceSpeechLocale: currentSource.speechLocale,
+    targetSpeechLocale: currentTarget.speechLocale,
+    speechLocale: currentTarget.speechLocale,
+  }
 
   const cameraPreviewRef = useRef<CameraPreviewHandle>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -27,15 +45,15 @@ export default function Home() {
     try {
       const imageBase64 = cameraPreviewRef.current?.captureImage() || ""
 
-      console.log("Đang gửi ảnh tới API...")
+      console.log(`Đang gửi ảnh tới API (Dịch từ ${currentSource.label} sang ${currentTarget.label})...`)
 
       const res = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           image: imageBase64,
-          sourceLanguage: languagePair.from,
-          targetLanguage: languagePair.to,
+          sourceLanguage: currentSource.code,
+          targetLanguage: currentTarget.code,
         }),
       })
 
@@ -54,8 +72,10 @@ export default function Home() {
       setCaptured({
         imageUrl: imageBase64,
         originalWord: data.originalWord,
+        originalPhonetic: data.originalPhonetic || "",
         wordType: data.wordType || data.partOfSpeech || "",
         translatedWord: data.translatedWord,
+        translatedPhonetic: data.translatedPhonetic || "",
         ipa: data.ipa || "",
       })
     } catch (err: unknown) {
@@ -78,15 +98,15 @@ export default function Home() {
     reader.onload = async (event) => {
       const imageBase64 = event.target?.result as string
       try {
-        console.log("Đang gửi ảnh tới API...")
+        console.log(`Đang gửi ảnh từ thư viện tới API (Dịch từ ${currentSource.label} sang ${currentTarget.label})...`)
 
         const res = await fetch("/api/analyze", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             image: imageBase64,
-            sourceLanguage: languagePair.from,
-            targetLanguage: languagePair.to,
+            sourceLanguage: currentSource.code,
+            targetLanguage: currentTarget.code,
           }),
         })
 
@@ -105,8 +125,10 @@ export default function Home() {
         setCaptured({
           imageUrl: imageBase64,
           originalWord: data.originalWord,
+          originalPhonetic: data.originalPhonetic || "",
           wordType: data.wordType || data.partOfSpeech || "",
           translatedWord: data.translatedWord,
+          translatedPhonetic: data.translatedPhonetic || "",
           ipa: data.ipa || "",
         })
       } catch (err: unknown) {
@@ -130,17 +152,13 @@ export default function Home() {
       />
 
       {/* 1. Top Bar */}
-      <TopBar
-        onOpenMenu={() => setDrawerOpen(true)}
-        languagePair={languagePair}
-        onChangeLanguage={setLanguagePair}
-      />
+      <TopBar onOpenMenu={() => setDrawerOpen(true)} />
 
       {/* 2. Camera Preview */}
       <section className="relative z-10 flex flex-1 flex-col items-center justify-center px-6">
         <CameraPreview ref={cameraPreviewRef} facingFront={facingFront} />
         <p className="mt-6 text-balance text-center text-sm text-neutral-400">
-          Chụp vật thể để dịch từ vựng
+          Chụp hoặc tải lên vật thể cần dịch
         </p>
       </section>
 
@@ -166,7 +184,7 @@ export default function Home() {
       {/* Capture Modal (shadcn Dialog - capture result popup) */}
       <CaptureModal
         data={captured}
-        languagePair={languagePair}
+        languagePair={activeLanguagePair}
         onClose={() => setCaptured(null)}
         onRetake={() => {
           setCaptured(null)
@@ -176,3 +194,4 @@ export default function Home() {
     </main>
   )
 }
+

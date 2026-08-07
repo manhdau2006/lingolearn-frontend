@@ -1,5 +1,19 @@
 import { NextResponse } from "next/server"
 import { GoogleGenAI } from "@google/genai"
+import { resolveLanguage } from "@/lib/vocab"
+
+// Smart multi-language fallback dataset for object recognition when API rate limit (429) occurs
+const FALLBACK_OBJECTS: Record<
+  string,
+  { word: string; phonetic: string; wordType: string }
+> = {
+  vi: { word: "Cái ghế", phonetic: "/cái ghế/", wordType: "danh từ" },
+  en: { word: "Chair", phonetic: "/tʃeər/", wordType: "noun" },
+  ja: { word: "椅子", phonetic: "いす (Isu)", wordType: "名詞" },
+  ko: { word: "의자", phonetic: "[uija]", wordType: "명사" },
+  zh: { word: "椅子", phonetic: "yǐzi", wordType: "名词" },
+  fr: { word: "Chaise", phonetic: "/ʃɛz/", wordType: "nom" },
+}
 
 export async function POST(req: Request) {
   try {
@@ -17,12 +31,13 @@ export async function POST(req: Request) {
 
     const apiKey = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY
 
+    // Normalize source and target languages using resolveLanguage
+    const srcLang = resolveLanguage(sourceLanguage)
+    const tgtLang = resolveLanguage(targetLanguage)
+
     if (!apiKey || !apiKey.trim()) {
-      console.error("LỖI SERVER: Chưa cấu hình GEMINI_API_KEY trong process.env")
-      return NextResponse.json(
-        { error: "Chưa cấu hình GEMINI_API_KEY trong file .env.local trên server" },
-        { status: 500 }
-      )
+      console.warn("Chưa cấu hình GEMINI_API_KEY, tự động chuyển sang dữ liệu thử nghiệm chuẩn theo ngôn ngữ đã chọn.")
+      return NextResponse.json(getFallbackData(srcLang.code, tgtLang.code))
     }
 
     // Cắt bỏ phần tiền tố data:image/...;base64, nếu có
@@ -30,19 +45,26 @@ export async function POST(req: Request) {
       ? rawImage.split(";base64,").pop()!
       : rawImage
 
-    // Trích xuất mimeType từ header data URL hoặc mặc định image/jpeg
     const mimeTypeMatch = rawImage.match(/^data:(image\/\w+);base64,/)
     const mimeType = mimeTypeMatch ? mimeTypeMatch[1] : "image/jpeg"
 
-    // Khởi tạo GoogleGenAI từ SDK mới @google/genai (tương thích hoàn hảo với khóa 'AQ.' mới)
     const ai = new GoogleGenAI({ apiKey })
 
-    const srcLang = sourceLanguage || "Tiếng Việt"
-    const tgtLang = targetLanguage || "Tiếng Anh"
+    const prompt = `You are a multi-language vocabulary recognition expert.
+Identify the primary object in this image.
+- Source language: ${srcLang.englishName} (code: '${srcLang.code}')
+- Target language: ${tgtLang.englishName} (code: '${tgtLang.code}')
 
-    const prompt = `Identify the most prominent object in this image. Translate it from ${srcLang} to ${tgtLang}. Return ONLY a raw JSON object with no markdown formatting, structured exactly like this: {"originalWord": "...", "wordType": "...", "translatedWord": "...", "ipa": "..."}`
+Return ONLY a raw JSON object with no markdown formatting formatted as follows:
+{
+  "originalWord": "Name of object in ${srcLang.englishName}",
+  "originalPhonetic": "Phonetic / Romaji / Pinyin / Hangul pronunciation for originalWord (if applicable)",
+  "translatedWord": "Translation of object name in ${tgtLang.englishName}",
+  "translatedPhonetic": "Phonetic / IPA / Romaji / Pinyin pronunciation for translatedWord",
+  "wordType": "Part of speech in Vietnamese (e.g. danh từ, động từ, tính từ)",
+  "ipa": "Full phonetic representation"
+}`
 
-    // Danh sách các model Gemini hiện đại được hỗ trợ bởi SDK mới @google/genai
     const candidateModels = [
       "gemini-3.5-flash-lite",
       "gemini-2.5-flash",
@@ -57,7 +79,7 @@ export async function POST(req: Request) {
 
     for (const modelName of candidateModels) {
       try {
-        console.log(`Đang thử kết nối Gemini model mới: ${modelName}...`)
+        console.log(`Đang kết nối Gemini AI (${modelName}) [${srcLang.code} -> ${tgtLang.code}]...`)
         response = await ai.models.generateContent({
           model: modelName,
           contents: [
@@ -72,15 +94,14 @@ export async function POST(req: Request) {
         })
 
         if (response && response.text) {
-          console.log(`Đã kết nối thành công với model: ${modelName}`)
+          console.log(`Kết nối thành công model: ${modelName}`)
           break
         }
       } catch (err: unknown) {
         const errMsg = err instanceof Error ? err.message : String(err)
-        console.warn(`Model ${modelName} chưa sẵn sàng hoặc bị lỗi:`, errMsg)
+        console.warn(`Model ${modelName} không khả dụng:`, errMsg)
         lastError = err
 
-        // Nếu là lỗi 429 Quota Exceeded thì lập tức ngắt vòng lặp để fallback
         if (errMsg.includes("429") || errMsg.includes("RESOURCE_EXHAUSTED") || errMsg.includes("Quota exceeded")) {
           break
         }
@@ -90,41 +111,50 @@ export async function POST(req: Request) {
     if (!response || !response.text) {
       const errString = lastError instanceof Error ? lastError.message : String(lastError)
 
-      // Xử lý khi chạm hạn ngạch 429 Rate Limit
       if (errString.includes("429") || errString.includes("RESOURCE_EXHAUSTED") || errString.includes("Quota exceeded")) {
-        console.warn("HẠN NGẠCH 429: Đã chạm giới hạn request Gemini miễn phí. Tự động chuyển sang dữ liệu thử nghiệm.")
-        return NextResponse.json({
-          originalWord: "Cái ghế",
-          wordType: "danh từ",
-          translatedWord: "Chair",
-          ipa: "/tʃeər/",
-          isFallback: true,
-          warningMessage: "Đã hết hạn ngạch Gemini miễn phí tạm thời (Lỗi 429). Đang dùng dữ liệu nhận diện thử nghiệm.",
-        })
+        console.warn(`HẠN NGẠCH 429: Gemini bận. Tự động trả về dữ liệu mẫu cho cặp ngôn ngữ [${srcLang.code} -> ${tgtLang.code}]`)
+        return NextResponse.json(getFallbackData(srcLang.code, tgtLang.code))
       }
 
-      throw lastError || new Error("Không có Gemini model nào khả dụng với API Key này.")
+      throw lastError || new Error("Không có Gemini model nào phản hồi.")
     }
 
     const textResponse = response.text || ""
-
-    // Loại bỏ các thẻ markdown ```json nếu Gemini tự động bọc vào
     const cleanedText = textResponse
       .replace(/```json\n?/gi, "")
       .replace(/```\n?/g, "")
       .trim()
 
     const jsonResult = JSON.parse(cleanedText)
-    console.log("Kết quả từ Gemini AI SDK mới (@google/genai):", jsonResult)
+
+    if (!jsonResult.originalPhonetic) jsonResult.originalPhonetic = ""
+    if (!jsonResult.translatedPhonetic) jsonResult.translatedPhonetic = jsonResult.ipa || ""
 
     return NextResponse.json(jsonResult)
   } catch (error: unknown) {
-    console.error("Lỗi khi kết nối với Gemini AI bằng SDK @google/genai:", error)
+    console.error("Lỗi khi xử lý API analyze:", error)
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : "Có lỗi xảy ra khi xử lý nhận diện hình ảnh với Gemini AI",
+        error: error instanceof Error ? error.message : "Có lỗi xảy ra khi xử lý nhận diện hình ảnh",
       },
       { status: 500 }
     )
   }
 }
+
+function getFallbackData(srcCode: string, tgtCode: string) {
+  const src = FALLBACK_OBJECTS[srcCode] || FALLBACK_OBJECTS.vi
+  const tgt = FALLBACK_OBJECTS[tgtCode] || FALLBACK_OBJECTS.en
+
+  return {
+    originalWord: src.word,
+    originalPhonetic: src.phonetic,
+    wordType: "danh từ",
+    translatedWord: tgt.word,
+    translatedPhonetic: tgt.phonetic,
+    ipa: src.phonetic ? `${src.phonetic} → ${tgt.phonetic}` : tgt.phonetic,
+    isFallback: true,
+    warningMessage: `Đang sử dụng dữ liệu nhận diện mẫu cho cặp ngôn ngữ (${srcCode.toUpperCase()} → ${tgtCode.toUpperCase()}).`,
+  }
+}
+

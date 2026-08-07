@@ -1,19 +1,54 @@
+export type LanguageOption = {
+  code: string
+  label: string
+  shortLabel: string
+  englishName: string
+  /** BCP-47 code used for speech synthesis */
+  speechLocale: string
+}
+
+export const SUPPORTED_LANGUAGES: LanguageOption[] = [
+  { code: "vi", label: "Tiếng Việt", shortLabel: "VI", englishName: "Vietnamese", speechLocale: "vi-VN" },
+  { code: "en", label: "Tiếng Anh", shortLabel: "EN", englishName: "English", speechLocale: "en-US" },
+  { code: "ja", label: "Tiếng Nhật", shortLabel: "JA", englishName: "Japanese", speechLocale: "ja-JP" },
+  { code: "ko", label: "Tiếng Hàn", shortLabel: "KO", englishName: "Korean", speechLocale: "ko-KR" },
+  { code: "zh", label: "Tiếng Trung", shortLabel: "ZH", englishName: "Chinese", speechLocale: "zh-CN" },
+  { code: "fr", label: "Tiếng Pháp", shortLabel: "FR", englishName: "French", speechLocale: "fr-FR" },
+]
+
+export function getLanguageByCode(code: string): LanguageOption {
+  return (
+    SUPPORTED_LANGUAGES.find((lang) => lang.code === code) ||
+    SUPPORTED_LANGUAGES[0]
+  )
+}
+
+export function resolveLanguage(input?: string): LanguageOption {
+  if (!input || !input.trim()) return SUPPORTED_LANGUAGES[0]
+  const clean = input.trim().toLowerCase()
+  return (
+    SUPPORTED_LANGUAGES.find(
+      (lang) =>
+        lang.code.toLowerCase() === clean ||
+        lang.label.toLowerCase() === clean ||
+        lang.englishName.toLowerCase() === clean
+    ) || SUPPORTED_LANGUAGES[0]
+  )
+}
+
 export type LanguagePair = {
   id: string
   from: string
   to: string
+  fromCode: string
+  toCode: string
   fromShort: string
   toShort: string
-  /** BCP-47 code used for speech synthesis of the translated word */
+  sourceSpeechLocale: string
+  targetSpeechLocale: string
+  /** BCP-47 code used for speech synthesis of the target translated word */
   speechLocale: string
 }
-
-export const LANGUAGE_PAIRS: LanguagePair[] = [
-  { id: "vi-en", from: "Tiếng Việt", to: "Tiếng Anh", fromShort: "VI", toShort: "EN", speechLocale: "en-US" },
-  { id: "vi-fr", from: "Tiếng Việt", to: "Tiếng Pháp", fromShort: "VI", toShort: "FR", speechLocale: "fr-FR" },
-  { id: "vi-ja", from: "Tiếng Việt", to: "Tiếng Nhật", fromShort: "VI", toShort: "JA", speechLocale: "ja-JP" },
-  { id: "vi-ko", from: "Tiếng Việt", to: "Tiếng Hàn", fromShort: "VI", toShort: "KO", speechLocale: "ko-KR" },
-]
 
 export type Recognition = {
   source: string
@@ -32,3 +67,5 @@ const SAMPLES: Recognition[] = [
 export function recognizeSample(): Recognition {
   return SAMPLES[0]
 }
+
+

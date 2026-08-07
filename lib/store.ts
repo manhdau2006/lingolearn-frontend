@@ -22,6 +22,13 @@ type StoreState = {
   folders: Folder[]
   vocabularies: Vocabulary[]
 
+  // Language Selection State
+  sourceLanguage: string
+  targetLanguage: string
+  setSourceLanguage: (code: string) => void
+  setTargetLanguage: (code: string) => void
+  swapLanguages: () => void
+
   // Folder Actions
   addFolder: (name: string) => void
   deleteFolder: (id: string) => void
@@ -50,6 +57,18 @@ export const useAppStore = create<StoreState>()(
     (set) => ({
       folders: DEFAULT_FOLDERS,
       vocabularies: [],
+
+      // Language Defaults
+      sourceLanguage: "vi",
+      targetLanguage: "en",
+
+      setSourceLanguage: (code: string) => set({ sourceLanguage: code }),
+      setTargetLanguage: (code: string) => set({ targetLanguage: code }),
+      swapLanguages: () =>
+        set((state) => ({
+          sourceLanguage: state.targetLanguage,
+          targetLanguage: state.sourceLanguage,
+        })),
 
       addFolder: (name: string) => {
         const cleanName = name.trim()

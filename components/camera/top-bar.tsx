@@ -1,6 +1,5 @@
 "use client"
 
-import { useState } from "react"
 import { Menu, ArrowRight } from "lucide-react"
 import {
   Select,
@@ -9,61 +8,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import type { LanguagePair } from "@/lib/vocab"
+import { SUPPORTED_LANGUAGES, getLanguageByCode } from "@/lib/vocab"
+import { useAppStore } from "@/lib/store"
 
 type TopBarProps = {
   onOpenMenu: () => void
-  languagePair?: LanguagePair
-  onChangeLanguage?: (pair: LanguagePair) => void
 }
 
-const LANGUAGES = [
-  "Tiếng Việt",
-  "Tiếng Anh",
-  "Tiếng Nhật",
-  "Tiếng Hàn",
-  "Tiếng Trung",
-  "Tiếng Pháp",
-]
+export function TopBar({ onOpenMenu }: TopBarProps) {
+  const sourceLanguage = useAppStore((state) => state.sourceLanguage)
+  const targetLanguage = useAppStore((state) => state.targetLanguage)
+  const setSourceLanguage = useAppStore((state) => state.setSourceLanguage)
+  const setTargetLanguage = useAppStore((state) => state.setTargetLanguage)
+  const swapLanguages = useAppStore((state) => state.swapLanguages)
 
-export function TopBar({ onOpenMenu, languagePair, onChangeLanguage }: TopBarProps) {
-  // State quản lý ngôn ngữ gốc (Mặc định: Tiếng Việt) và ngôn ngữ đích (Mặc định: Tiếng Anh)
-  const [sourceLang, setSourceLang] = useState<string>(
-    languagePair?.from || "Tiếng Việt"
-  )
-  const [targetLang, setTargetLang] = useState<string>(
-    languagePair?.to || "Tiếng Anh"
-  )
-
-  const handleSourceChange = (val: unknown) => {
-    if (typeof val !== "string") return
-    setSourceLang(val)
-    if (onChangeLanguage) {
-      onChangeLanguage({
-        id: `${val}-${targetLang}`,
-        from: val,
-        to: targetLang,
-        fromShort: val.slice(0, 2).toUpperCase(),
-        toShort: targetLang.slice(0, 2).toUpperCase(),
-        speechLocale: "en-US",
-      })
-    }
-  }
-
-  const handleTargetChange = (val: unknown) => {
-    if (typeof val !== "string") return
-    setTargetLang(val)
-    if (onChangeLanguage) {
-      onChangeLanguage({
-        id: `${sourceLang}-${val}`,
-        from: sourceLang,
-        to: val,
-        fromShort: sourceLang.slice(0, 2).toUpperCase(),
-        toShort: val.slice(0, 2).toUpperCase(),
-        speechLocale: "en-US",
-      })
-    }
-  }
+  const currentSource = getLanguageByCode(sourceLanguage)
+  const currentTarget = getLanguageByCode(targetLanguage)
 
   return (
     <header className="relative z-20 flex items-center justify-between px-4 pt-6 pb-2">
@@ -80,30 +40,48 @@ export function TopBar({ onOpenMenu, languagePair, onChangeLanguage }: TopBarPro
       {/* Bộ chọn ngôn ngữ động với Select component của shadcn */}
       <div className="flex items-center gap-1.5 rounded-full bg-neutral-800/70 p-1 backdrop-blur ring-1 ring-white/10">
         {/* Ngôn ngữ gốc */}
-        <Select value={sourceLang} onValueChange={handleSourceChange}>
+        <Select
+          value={sourceLanguage}
+          onValueChange={(val) => {
+            if (typeof val === "string") setSourceLanguage(val)
+          }}
+        >
           <SelectTrigger className="border-none bg-transparent px-3 py-1.5 text-xs font-medium text-neutral-100 shadow-none hover:bg-neutral-700/50">
-            <SelectValue placeholder="Gốc">{sourceLang}</SelectValue>
+            <SelectValue placeholder="Gốc">{currentSource.label}</SelectValue>
           </SelectTrigger>
           <SelectContent className="w-36">
-            {LANGUAGES.map((lang) => (
-              <SelectItem key={`source-${lang}`} value={lang}>
-                {lang}
+            {SUPPORTED_LANGUAGES.map((lang) => (
+              <SelectItem key={`source-${lang.code}`} value={lang.code}>
+                {lang.label}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
 
-        <ArrowRight className="size-3.5 shrink-0 text-amber-400" />
+        {/* Nút đổi chiều ngôn ngữ */}
+        <button
+          type="button"
+          onClick={swapLanguages}
+          aria-label="Đổi chiều ngôn ngữ"
+          className="flex items-center justify-center p-1 transition-transform active:scale-90 hover:opacity-80"
+        >
+          <ArrowRight className="size-3.5 shrink-0 text-amber-400" />
+        </button>
 
         {/* Ngôn ngữ đích */}
-        <Select value={targetLang} onValueChange={handleTargetChange}>
+        <Select
+          value={targetLanguage}
+          onValueChange={(val) => {
+            if (typeof val === "string") setTargetLanguage(val)
+          }}
+        >
           <SelectTrigger className="border-none bg-transparent px-3 py-1.5 text-xs font-medium text-neutral-100 shadow-none hover:bg-neutral-700/50">
-            <SelectValue placeholder="Đích">{targetLang}</SelectValue>
+            <SelectValue placeholder="Đích">{currentTarget.label}</SelectValue>
           </SelectTrigger>
           <SelectContent className="w-36">
-            {LANGUAGES.map((lang) => (
-              <SelectItem key={`target-${lang}`} value={lang}>
-                {lang}
+            {SUPPORTED_LANGUAGES.map((lang) => (
+              <SelectItem key={`target-${lang.code}`} value={lang.code}>
+                {lang.label}
               </SelectItem>
             ))}
           </SelectContent>
@@ -112,3 +90,4 @@ export function TopBar({ onOpenMenu, languagePair, onChangeLanguage }: TopBarPro
     </header>
   )
 }
+
