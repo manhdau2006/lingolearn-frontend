@@ -285,7 +285,7 @@ export default function FlashcardsPage() {
             animate={controls}
           >
             <motion.div
-              className="w-full h-full relative rounded-[2rem] [transform-style:preserve-3d] shadow-2xl"
+              className="relative w-full h-full transition-transform duration-500 [transform-style:preserve-3d] shadow-2xl rounded-2xl"
               animate={{ rotateY: isFlipped ? 180 : 0 }}
               transition={{ type: "spring", stiffness: 260, damping: 20 }}
               onClick={() => {
@@ -293,9 +293,9 @@ export default function FlashcardsPage() {
               }}
             >
               {/* Front side */}
-              <div className="absolute inset-0 bg-zinc-900 rounded-[2rem] border border-zinc-800 flex flex-col items-center justify-center p-8 overflow-hidden [backface-visibility:hidden]">
+              <div className="absolute inset-0 w-full h-full [backface-visibility:hidden] rounded-2xl overflow-hidden flex flex-col items-center justify-center p-6 bg-zinc-800">
                 {currentVocab.imageUrl && (
-                  <div className="w-48 h-48 relative mb-8 rounded-2xl overflow-hidden border border-zinc-800 flex-shrink-0 bg-zinc-950">
+                  <div className="w-48 h-48 relative mb-8 rounded-2xl overflow-hidden border border-zinc-700 flex-shrink-0 bg-zinc-950">
                     <img 
                       src={currentVocab.imageUrl} 
                       alt={currentVocab.originalWord}
@@ -306,7 +306,7 @@ export default function FlashcardsPage() {
                 <h2 className="text-4xl font-bold text-white text-center break-words w-full line-clamp-3">
                   {currentVocab.originalWord}
                 </h2>
-                <p className="text-zinc-500 text-sm mt-6 font-medium">Nhấn để xem nghĩa</p>
+                <p className="text-zinc-400 text-sm mt-6 font-medium">Nhấn để xem nghĩa</p>
                 
                 {/* Status Overlay */}
                 {markStatus && (
@@ -321,14 +321,11 @@ export default function FlashcardsPage() {
               </div>
 
               {/* Back side */}
-              <div 
-                className="absolute inset-0 bg-zinc-800 rounded-[2rem] border border-zinc-700 flex flex-col items-center justify-center p-8 [backface-visibility:hidden]"
-                style={{ transform: "rotateY(180deg)" }}
-              >
-                <h2 className="text-3xl font-bold text-white text-center break-words w-full mb-4">
+              <div className="absolute inset-0 w-full h-full [backface-visibility:hidden] rounded-2xl overflow-hidden flex flex-col items-center justify-center p-6 bg-zinc-800 [transform:rotateY(180deg)] gap-4">
+                <h2 className="text-3xl font-bold text-white text-center break-words w-full">
                   {currentVocab.translatedWord}
                 </h2>
-                <div className="flex flex-wrap items-center justify-center gap-3 mb-10">
+                <div className="flex flex-wrap items-center justify-center gap-3">
                   {currentVocab.wordType && (
                     <span className="px-4 py-1.5 bg-zinc-700 text-zinc-300 rounded-lg text-sm font-semibold tracking-wide">
                       {currentVocab.wordType}
@@ -349,7 +346,7 @@ export default function FlashcardsPage() {
                   <Volume2 size={36} />
                 </button>
                 
-                <p className="text-zinc-500 text-sm mt-auto font-medium">Nhấn để quay lại</p>
+                <p className="text-zinc-400 text-sm font-medium">Nhấn để quay lại</p>
 
                 {/* Status Overlay (back side) */}
                 {markStatus && (
