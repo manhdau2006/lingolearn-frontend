@@ -27,6 +27,7 @@ export default function FlashcardsPage() {
   const [isFlipped, setIsFlipped] = useState(false)
   const [streak, setStreak] = useState(0)
   const [maxStreak, setMaxStreak] = useState(0)
+  const [learnedCount, setLearnedCount] = useState(0)
   
   const [markStatus, setMarkStatus] = useState<'learned' | 'review' | null>(null)
 
@@ -46,6 +47,7 @@ export default function FlashcardsPage() {
     setStreak(0)
     setIsFlipped(false)
     setMarkStatus(null)
+    setLearnedCount(0)
   }
 
   const goBackToFolders = () => {
@@ -56,16 +58,16 @@ export default function FlashcardsPage() {
     setIsFlipped(false)
     setMarkStatus(null)
     setDeck([])
+    setLearnedCount(0)
   }
 
   const controls = useAnimation()
   const x = useMotionValue(0)
-  const rotate = useTransform(x, [-200, 200], [-15, 15])
   const opacity = useTransform(x, [-200, -100, 0, 100, 200], [0, 1, 1, 1, 0])
 
   const resetCardPosition = () => {
     x.set(0)
-    controls.set({ x: 0, opacity: 1, rotate: 0 })
+    controls.set({ x: 0, opacity: 1 })
     setIsFlipped(false)
     setMarkStatus(null)
   }
@@ -81,6 +83,7 @@ export default function FlashcardsPage() {
         const newStreak = streak + 1
         setStreak(newStreak)
         setMaxStreak((prev) => Math.max(prev, newStreak))
+        setLearnedCount((prev) => prev + 1)
       } else {
         setStreak(0)
       }
@@ -203,9 +206,15 @@ export default function FlashcardsPage() {
           <h1 className="text-4xl font-bold mb-3 text-green-500">Chúc mừng!</h1>
           <p className="text-lg mb-10 text-neutral-400">Bạn đã ôn tập xong!</p>
           
-          <div className="bg-neutral-900 p-8 rounded-3xl border border-neutral-800 mb-10 w-full max-w-xs mx-auto shadow-xl">
+          <div className="bg-neutral-900 p-8 rounded-3xl border border-neutral-800 mb-10 w-full max-w-xs mx-auto shadow-xl text-center">
             <p className="text-neutral-500 mb-2 font-medium">Chuỗi nhớ liên tiếp cao nhất</p>
             <p className="text-5xl font-black text-amber-500 drop-shadow-md">{maxStreak} 🔥</p>
+
+            <hr className="border-neutral-800 my-6" />
+
+            <p className="text-sm text-neutral-400 font-medium">Độ chính xác</p>
+            <p className="text-3xl font-bold text-green-500 mt-1">{deck.length > 0 ? Math.round((learnedCount / deck.length) * 100) : 0}%</p>
+            <p className="text-xs text-neutral-500 mt-2">({learnedCount} / {deck.length} từ)</p>
           </div>
 
           <div className="flex gap-4 w-full max-w-xs mx-auto">
@@ -278,7 +287,7 @@ export default function FlashcardsPage() {
       <div className="flex-1 min-h-0 flex items-center justify-center p-6 relative perspective-[1000px]">
         <motion.div
           className="relative aspect-[3/4] w-full max-w-[320px] max-h-full cursor-grab active:cursor-grabbing [transform-style:preserve-3d]"
-          style={{ x, rotate, opacity }}
+          style={{ x, opacity }}
           drag={markStatus === null ? "x" : false}
           dragConstraints={{ left: 0, right: 0 }}
           dragSnapToOrigin={true}
@@ -288,7 +297,7 @@ export default function FlashcardsPage() {
           <motion.div
             className="relative w-full h-full transition-transform duration-500 [transform-style:preserve-3d] shadow-2xl rounded-2xl"
             animate={{ rotateY: isFlipped ? 180 : 0 }}
-            transition={{ type: "spring", stiffness: 260, damping: 20 }}
+            transition={{ duration: 0.25, ease: "easeInOut" }}
             onClick={() => {
               if (markStatus === null) setIsFlipped(!isFlipped)
             }}
@@ -304,7 +313,7 @@ export default function FlashcardsPage() {
                   />
                 </div>
               )}
-              <h2 className="text-4xl font-bold text-white text-center break-words w-full line-clamp-3">
+              <h2 className="text-3xl font-bold text-white text-center break-words w-full line-clamp-3">
                 {currentVocab.originalWord}
               </h2>
               <p className="text-neutral-400 text-sm mt-6 font-medium">Nhấn để xem nghĩa</p>
