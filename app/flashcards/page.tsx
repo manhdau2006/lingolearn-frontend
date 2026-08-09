@@ -4,8 +4,9 @@ import { useEffect, useState } from "react"
 import { motion, useAnimation, useMotionValue, useTransform } from "framer-motion"
 import { useAppStore, type Vocabulary, type Folder } from "@/lib/store"
 import { playAudio } from "@/lib/audio"
-import { Volume2, X, Check, RotateCcw, Folder as FolderIcon, ChevronLeft, ChevronRight, CheckCircle2, XCircle, Search } from "lucide-react"
+import { Volume2, X, Check, RotateCcw, Folder as FolderIcon, ChevronLeft, ChevronRight, CheckCircle2, XCircle, Search, Menu } from "lucide-react"
 import Link from "next/link"
+import { MenuDrawer } from "@/components/camera/menu-drawer"
 import {
   Select,
   SelectContent,
@@ -29,6 +30,7 @@ export default function FlashcardsPage() {
   
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
+  const [drawerOpen, setDrawerOpen] = useState(false)
 
   const [deck, setDeck] = useState<Vocabulary[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -140,26 +142,27 @@ export default function FlashcardsPage() {
 
     return (
       <div className="flex h-screen w-full flex-col bg-neutral-950 text-neutral-50 antialiased overflow-hidden">
+        <MenuDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
         <div className="mx-auto flex h-full w-full max-w-md flex-col bg-neutral-950">
           
           {/* Sticky Header Wrapper */}
           <div className="sticky top-0 z-50 shrink-0 bg-neutral-950 border-b border-zinc-800 px-4 pt-6 pb-4">
-            {/* Top Row: Back button & Title "Chọn thư mục để học" */}
+            {/* Top Row: Hamburger Menu button & Title "Chọn thư mục để học" */}
             <header className="relative flex items-center justify-between pb-4">
-              <Link
-                href="/"
-                className="flex items-center gap-1 text-sm font-medium text-neutral-300 transition-colors hover:text-white active:scale-95"
-                aria-label="Quay về trang chủ"
+              <button
+                type="button"
+                onClick={() => setDrawerOpen(true)}
+                aria-label="Mở menu"
+                className="flex size-9 items-center justify-center rounded-full border border-neutral-800 bg-neutral-900/80 text-neutral-200 transition-colors hover:bg-neutral-800 hover:text-white active:scale-95 shrink-0"
               >
-                <ChevronLeft className="size-5" />
-                <span>Back</span>
-              </Link>
+                <Menu className="size-5" />
+              </button>
 
               <h1 className="text-base font-bold text-neutral-100">
                 Chọn thư mục để học
               </h1>
 
-              <div className="w-12" /> {/* Spacer */}
+              <div className="w-9" /> {/* Spacer */}
             </header>
 
             {/* Bottom Row: Subtitle "TẤT CẢ THƯ MỤC (số lượng)" & Search Input */}
