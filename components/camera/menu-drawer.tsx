@@ -60,7 +60,7 @@ export function MenuDrawer({ open, onClose }: MenuDrawerProps) {
             </a>
           </p>
           <p className="mt-1 text-neutral-400">
-            Linkedin:{" "}
+            LinkedIn:{" "}
             <a
               href="https://www.linkedin.com/in/duc-manh-dau-b06360244"
               target="_blank"
