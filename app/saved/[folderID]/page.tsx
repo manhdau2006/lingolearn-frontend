@@ -14,6 +14,7 @@ import {
   X,
   Layers,
   Check,
+  Search,
 } from "lucide-react"
 import { useAppStore } from "@/lib/store"
 import { playAudio } from "@/lib/audio"
@@ -49,12 +50,26 @@ export default function FolderDetailPage({
   const copyVocabularyToFolder = useAppStore((state) => state.copyVocabularyToFolder)
   const copyMultipleVocabulariesToFolder = useAppStore((state) => state.copyMultipleVocabulariesToFolder)
 
+  // Search State
+  const [searchTerm, setSearchTerm] = useState("")
+
   // Information of current folder
   const currentFolder = folders.find((f) => f.id === folderID)
   const folderTitle = currentFolder ? currentFolder.name : `#${folderID}`
 
   // Vocabularies in current folder
   const folderVocabs = vocabularies.filter((v) => v.folderId === folderID)
+
+  // Filtered Vocabularies based on search term
+  const filteredVocabs = folderVocabs.filter((vocab) => {
+    if (!searchTerm.trim()) return true
+    const query = searchTerm.toLowerCase().trim()
+    const matchOriginal = vocab.originalWord.toLowerCase().includes(query)
+    const matchTranslated = vocab.translatedWord.toLowerCase().includes(query)
+    const matchIpa = vocab.ipa ? vocab.ipa.toLowerCase().includes(query) : false
+    const matchType = vocab.wordType ? vocab.wordType.toLowerCase().includes(query) : false
+    return matchOriginal || matchTranslated || matchIpa || matchType
+  })
 
   // Selection Mode States
   const [isSelectionMode, setIsSelectionMode] = useState(false)
@@ -79,22 +94,20 @@ export default function FolderDetailPage({
 
   // Toggle select all
   const toggleSelectAll = () => {
-    if (selectedIds.length === folderVocabs.length) {
+    if (selectedIds.length === filteredVocabs.length) {
       setSelectedIds([])
     } else {
-      setSelectedIds(folderVocabs.map((v) => v.id))
+      setSelectedIds(filteredVocabs.map((v) => v.id))
     }
   }
 
   // --- COPY ACTIONS ---
-  // Initiate Single Copy
   const openCopySingleModal = (id: string) => {
     setTargetVocabId(id)
     setSelectedTargetFolderId(destinationFolders[0]?.id || "")
     setCopyDialogOpen(true)
   }
 
-  // Initiate Bulk Copy
   const openCopyBulkModal = () => {
     if (selectedIds.length === 0) {
       toast.error("Vui lòng chọn ít nhất 1 từ vựng")
@@ -105,7 +118,6 @@ export default function FolderDetailPage({
     setCopyDialogOpen(true)
   }
 
-  // Confirm Copy
   const handleConfirmCopy = () => {
     if (!selectedTargetFolderId) {
       toast.error("Vui lòng chọn thư mục đích")
@@ -116,11 +128,9 @@ export default function FolderDetailPage({
     const targetName = targetFolder ? targetFolder.name : "thư mục đích"
 
     if (targetVocabId) {
-      // Copy single vocabulary
       copyVocabularyToFolder(targetVocabId, selectedTargetFolderId)
       toast.success(`Đã sao chép từ vựng sang ${targetName}`)
     } else {
-      // Copy multiple vocabularies
       copyMultipleVocabulariesToFolder(selectedIds, selectedTargetFolderId)
       toast.success(`Đã sao chép ${selectedIds.length} từ vựng sang ${targetName}`)
       setIsSelectionMode(false)
@@ -132,14 +142,12 @@ export default function FolderDetailPage({
   }
 
   // --- MOVE ACTIONS ---
-  // Initiate Single Move
   const openMoveSingleModal = (id: string) => {
     setTargetVocabId(id)
     setSelectedTargetFolderId(destinationFolders[0]?.id || "")
     setMoveDialogOpen(true)
   }
 
-  // Initiate Bulk Move
   const openMoveBulkModal = () => {
     if (selectedIds.length === 0) {
       toast.error("Vui lòng chọn ít nhất 1 từ vựng")
@@ -150,7 +158,6 @@ export default function FolderDetailPage({
     setMoveDialogOpen(true)
   }
 
-  // Confirm Move Action
   const handleConfirmMove = () => {
     if (!selectedTargetFolderId) {
       toast.error("Vui lòng chọn thư mục đích")
@@ -161,11 +168,9 @@ export default function FolderDetailPage({
     const targetName = targetFolder ? targetFolder.name : "thư mục mới"
 
     if (targetVocabId) {
-      // Move single vocabulary
       moveVocabulary(targetVocabId, selectedTargetFolderId)
       toast.success(`Đã di chuyển từ vựng sang ${targetName}`)
     } else {
-      // Move multiple vocabularies
       moveMultipleVocabularies(selectedIds, selectedTargetFolderId)
       toast.success(`Đã di chuyển ${selectedIds.length} từ vựng sang ${targetName}`)
       setIsSelectionMode(false)
@@ -193,79 +198,117 @@ export default function FolderDetailPage({
   }
 
   return (
-    <div className="min-h-dvh bg-neutral-950 text-neutral-50 antialiased pb-24">
-      <div className="mx-auto flex min-h-dvh max-w-md flex-col bg-neutral-950 px-4 py-6">
-        {/* Header */}
-        <header className="relative flex items-center justify-between pb-6">
-          <Link
-            href="/saved"
-            className="flex items-center gap-1 text-sm font-medium text-neutral-300 transition-colors hover:text-white active:scale-95"
-            aria-label="Quay về danh sách bộ sưu tập"
-          >
-            <ChevronLeft className="size-5" />
-            <span>Back</span>
-          </Link>
-
-          <h1 className="absolute left-1/2 -translate-x-1/2 text-base font-bold text-neutral-100 truncate max-w-[10rem]">
-            {folderTitle}
-          </h1>
-
-          {/* Action "Chọn nhiều" / "Xong" */}
-          {folderVocabs.length > 0 && (
-            <button
-              type="button"
-              onClick={() => {
-                setIsSelectionMode((prev) => !prev)
-                setSelectedIds([])
-              }}
-              className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-all ${
-                isSelectionMode
-                  ? "bg-neutral-800 text-neutral-300 hover:bg-neutral-700"
-                  : "bg-amber-400/15 text-amber-400 hover:bg-amber-400/25"
-              }`}
+    <div className="flex h-screen w-full flex-col bg-neutral-950 text-neutral-50 antialiased overflow-hidden">
+      <div className="mx-auto flex h-full w-full max-w-md flex-col bg-neutral-950">
+        {/* Sticky Header Section (wraps Row 1 & Row 2) */}
+        <div className="sticky top-0 z-50 shrink-0 bg-neutral-950 border-b border-zinc-800 px-4 pt-6 pb-4">
+          {/* Row 1: Back button, Folder Title, Action "Chọn nhiều" / "Xong" */}
+          <header className="relative flex items-center justify-between pb-4">
+            <Link
+              href="/saved"
+              className="flex items-center gap-1 text-sm font-medium text-neutral-300 transition-colors hover:text-white active:scale-95"
+              aria-label="Quay về danh sách bộ sưu tập"
             >
-              {isSelectionMode ? "Xong" : "Chọn nhiều"}
-            </button>
-          )}
-        </header>
+              <ChevronLeft className="size-5" />
+              <span>Back</span>
+            </Link>
 
-        {/* Main Content Section */}
-        <main className="flex-1">
-          <div className="mb-4 flex items-center justify-between px-1">
-            <span className="text-xs font-medium uppercase tracking-wider text-neutral-400">
-              Danh sách từ vựng ({folderVocabs.length})
-            </span>
+            <h1 className="absolute left-1/2 -translate-x-1/2 text-base font-bold text-neutral-100 truncate max-w-[10rem]">
+              {folderTitle}
+            </h1>
 
-            {isSelectionMode && (
+            {/* Action "Chọn nhiều" / "Xong" */}
+            {folderVocabs.length > 0 && (
               <button
                 type="button"
-                onClick={toggleSelectAll}
-                className="text-xs font-semibold text-amber-400 hover:underline"
+                onClick={() => {
+                  setIsSelectionMode((prev) => !prev)
+                  setSelectedIds([])
+                }}
+                className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-all ${
+                  isSelectionMode
+                    ? "bg-neutral-800 text-neutral-300 hover:bg-neutral-700"
+                    : "bg-amber-400/15 text-amber-400 hover:bg-amber-400/25"
+                }`}
               >
-                {selectedIds.length === folderVocabs.length ? "Bỏ chọn tất cả" : "Chọn tất cả"}
+                {isSelectionMode ? "Xong" : "Chọn nhiều"}
               </button>
             )}
-          </div>
+          </header>
 
-          {folderVocabs.length === 0 ? (
+          {/* Row 2: Subtitle & Search Bar */}
+          <div className="flex items-center justify-between gap-2.5 w-full">
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="text-xs font-medium uppercase tracking-wider text-neutral-400">
+                DANH SÁCH TỪ VỰNG ({filteredVocabs.length})
+              </span>
+
+              {isSelectionMode && (
+                <button
+                  type="button"
+                  onClick={toggleSelectAll}
+                  className="text-xs font-semibold text-amber-400 hover:underline"
+                >
+                  {selectedIds.length === filteredVocabs.length ? "Bỏ chọn" : "Chọn tất"}
+                </button>
+              )}
+            </div>
+
+            {/* Search Input Component */}
+            <div className="relative flex-1 max-w-[13rem]">
+              <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-amber-400/90 pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Tìm kiếm từ vựng..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full rounded-full border border-neutral-800 bg-neutral-900/90 py-1.5 pl-8 pr-3 text-xs text-neutral-100 placeholder-neutral-500 focus:border-amber-400/60 focus:outline-none focus:ring-1 focus:ring-amber-400/60 transition-colors"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Scrollable Main Content Section */}
+        <main className="flex-1 overflow-y-auto px-4 py-4 pb-24">
+
+          {/* Vocabulary List Container */}
+          {filteredVocabs.length === 0 ? (
             <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-neutral-800 bg-neutral-900/40 p-8 text-center">
               <div className="mb-3 flex size-12 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-400">
-                <Layers className="size-6" />
+                {searchTerm ? <Search className="size-6" /> : <Layers className="size-6" />}
               </div>
-              <p className="text-sm font-semibold text-neutral-200">Chưa có từ vựng nào</p>
-              <p className="mt-1 text-xs text-neutral-400">
-                Hãy quay lại trang chủ và chụp ảnh đồ vật để lưu từ mới vào thư mục này.
+              <p className="text-sm font-semibold text-neutral-200">
+                {searchTerm ? (
+                  <>Không tìm thấy từ vựng chứa &quot;<span className="text-amber-400">{searchTerm}</span>&quot;</>
+                ) : (
+                  "Chưa có từ vựng nào"
+                )}
               </p>
-              <Link
-                href="/"
-                className="mt-4 rounded-xl bg-amber-400 px-4 py-2 text-xs font-semibold text-neutral-900 transition-colors hover:bg-amber-300"
-              >
-                Chụp ảnh ngay
-              </Link>
+              {searchTerm ? (
+                <button
+                  type="button"
+                  onClick={() => setSearchTerm("")}
+                  className="mt-3 text-xs font-semibold text-amber-400 hover:underline"
+                >
+                  Xóa từ khóa tìm kiếm
+                </button>
+              ) : (
+                <>
+                  <p className="mt-1 text-xs text-neutral-400">
+                    Hãy quay lại trang chủ và chụp ảnh đồ vật để lưu từ mới vào thư mục này.
+                  </p>
+                  <Link
+                    href="/"
+                    className="mt-4 rounded-xl bg-amber-400 px-4 py-2 text-xs font-semibold text-neutral-900 transition-colors hover:bg-amber-300"
+                  >
+                    Chụp ảnh ngay
+                  </Link>
+                </>
+              )}
             </div>
           ) : (
             <div className="flex flex-col gap-3">
-              {folderVocabs.map((vocab) => {
+              {filteredVocabs.map((vocab) => {
                 const isSelected = selectedIds.includes(vocab.id)
                 return (
                   <div

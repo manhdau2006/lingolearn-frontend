@@ -69,38 +69,38 @@ export default function SavedFoldersPage() {
   }
 
   return (
-    <div className="min-h-dvh bg-neutral-950 text-neutral-50 antialiased">
-      <div className="mx-auto flex min-h-dvh max-w-md flex-col bg-neutral-950 px-4 py-6">
-        {/* Header */}
-        <header className="relative flex items-center justify-between pb-6">
-          <Link
-            href="/"
-            className="flex items-center gap-1 text-sm font-medium text-neutral-300 transition-colors hover:text-white active:scale-95"
-            aria-label="Quay về trang chủ"
-          >
-            <ChevronLeft className="size-5" />
-            <span>Back</span>
-          </Link>
+    <div className="flex h-screen w-full flex-col bg-neutral-950 text-neutral-50 antialiased overflow-hidden">
+      <div className="mx-auto flex h-full w-full max-w-md flex-col bg-neutral-950">
+        {/* Sticky Header Section */}
+        <div className="sticky top-0 z-50 shrink-0 bg-neutral-950 border-b border-zinc-800 px-4 pt-6 pb-4">
+          {/* Top row: Back button, Page Title, Create New Button */}
+          <header className="relative flex items-center justify-between pb-4">
+            <Link
+              href="/"
+              className="flex items-center gap-1 text-sm font-medium text-neutral-300 transition-colors hover:text-white active:scale-95"
+              aria-label="Quay về trang chủ"
+            >
+              <ChevronLeft className="size-5" />
+              <span>Back</span>
+            </Link>
 
-          <h1 className="text-base font-bold text-neutral-100">
-            Bộ sưu tập
-          </h1>
+            <h1 className="text-base font-bold text-neutral-100">
+              Bộ sưu tập
+            </h1>
 
-          {/* + Tạo thư mục mới button */}
-          <button
-            type="button"
-            onClick={() => setCreateDialogOpen(true)}
-            className="flex items-center gap-1 rounded-full bg-amber-400/15 px-3 py-1.5 text-xs font-semibold text-amber-400 transition-colors hover:bg-amber-400/25 active:scale-95"
-          >
-            <Plus className="size-3.5" />
-            <span>Tạo mới</span>
-          </button>
-        </header>
+            {/* + Tạo thư mục mới button */}
+            <button
+              type="button"
+              onClick={() => setCreateDialogOpen(true)}
+              className="flex items-center gap-1 rounded-full bg-amber-400/15 px-3 py-1.5 text-xs font-semibold text-amber-400 transition-colors hover:bg-amber-400/25 active:scale-95"
+            >
+              <Plus className="size-3.5" />
+              <span>Tạo mới</span>
+            </button>
+          </header>
 
-        {/* Content Section */}
-        <main className="flex-1">
-          {/* Subtitle / Folder Count & Search Bar */}
-          <div className="mb-4 flex items-center justify-between gap-2 px-1">
+          {/* Bottom row: Subtitle / Folder Count & Search Bar */}
+          <div className="flex items-center justify-between gap-2 px-1">
             <span className="text-xs font-medium uppercase tracking-wider text-neutral-400 shrink-0">
               Tất cả thư mục ({folders.length})
             </span>
@@ -116,6 +116,10 @@ export default function SavedFoldersPage() {
               />
             </div>
           </div>
+        </div>
+
+        {/* Scrollable Content Section */}
+        <main className="flex-1 overflow-y-auto px-4 py-4">
 
           {/* Grid Layout (2 columns on mobile) */}
           {(() => {
