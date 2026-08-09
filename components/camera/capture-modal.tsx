@@ -83,7 +83,7 @@ export function CaptureModal({ data, languagePair, onClose, onRetake }: CaptureM
         originalWord: data.originalWord,
         wordType: data.wordType,
         translatedWord: data.translatedWord,
-        ipa: data.ipa,
+        ipa: data.translatedPhonetic || data.ipa,
         imageUrl: data.imageUrl,
       })
     })
