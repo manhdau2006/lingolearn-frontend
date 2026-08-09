@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { motion, useAnimation, useMotionValue, useTransform } from "framer-motion"
 import { useAppStore, type Vocabulary, type Folder } from "@/lib/store"
 import { playAudio } from "@/lib/audio"
-import { Volume2, X, Check, RotateCcw, Folder as FolderIcon, ChevronLeft, ChevronRight, CheckCircle2, XCircle } from "lucide-react"
+import { Volume2, X, Check, RotateCcw, Folder as FolderIcon, ChevronLeft, ChevronRight, CheckCircle2, XCircle, Search } from "lucide-react"
 import Link from "next/link"
 
 function shuffleArray<T>(array: T[]): T[] {
@@ -21,7 +21,8 @@ export default function FlashcardsPage() {
   const vocabularies = useAppStore((state) => state.vocabularies)
   
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null)
-  
+  const [searchQuery, setSearchQuery] = useState("")
+
   const [deck, setDeck] = useState<Vocabulary[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isFlipped, setIsFlipped] = useState(false)
@@ -126,38 +127,102 @@ export default function FlashcardsPage() {
 
   // --- MÀN HÌNH 1: DANH SÁCH THƯ MỤC ---
   if (selectedFolderId === null) {
+    const filteredFolders = folders.filter((f) =>
+      f.name.toLowerCase().includes(searchQuery.toLowerCase().trim())
+    )
+
     return (
       <div className="min-h-dvh bg-neutral-950 text-neutral-50 antialiased">
         <div className="mx-auto flex min-h-dvh max-w-md flex-col bg-neutral-950 px-4 py-6">
-          <div className="flex items-center mb-8 mt-4">
-            <Link href="/" className="p-2 -ml-2 text-neutral-400 hover:text-white transition-colors">
-              <ChevronLeft size={28} />
+          {/* Header */}
+          <div className="flex items-center justify-between pb-6">
+            <Link
+              href="/"
+              className="flex items-center gap-1 text-sm font-medium text-neutral-300 transition-colors hover:text-white active:scale-95"
+              aria-label="Quay về trang chủ"
+            >
+              <ChevronLeft className="size-5" />
+              <span>Back</span>
             </Link>
-            <h1 className="text-2xl font-bold ml-2">Chọn thư mục học</h1>
+
+            <h1 className="text-base font-bold text-neutral-100">
+              Chọn thư mục học
+            </h1>
+
+            <div className="w-12" /> {/* Spacer */}
           </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            {folders.map(folder => {
-              const vocabCount = vocabularies.filter(v => v.folderId === folder.id).length
-              return (
+
+          {/* Subtitle & Search Bar */}
+          <div className="mb-4 flex items-center justify-between gap-2 px-1">
+            <span className="text-xs font-medium uppercase tracking-wider text-neutral-400 shrink-0">
+              Tất cả thư mục ({folders.length})
+            </span>
+
+            <div className="relative flex-1 max-w-[13rem]">
+              <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-amber-400 pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Tìm tên thư mục..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full rounded-full border border-neutral-800 bg-neutral-900/90 py-1.5 pl-8 pr-3 text-xs text-neutral-100 placeholder-neutral-500 focus:border-amber-400/60 focus:outline-none focus:ring-1 focus:ring-amber-400/60"
+              />
+            </div>
+          </div>
+
+          {/* Folder Cards Grid */}
+          {filteredFolders.length === 0 ? (
+            <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-neutral-800 bg-neutral-900/30 p-8 text-center mt-4">
+              <p className="text-sm text-neutral-400">
+                {searchQuery ? (
+                  <>Không tìm thấy thư mục nào phù hợp với &quot;<span className="text-amber-400 font-medium">{searchQuery}</span>&quot;</>
+                ) : (
+                  "Chưa có thư mục nào."
+                )}
+              </p>
+              {searchQuery && (
                 <button
-                  key={folder.id}
-                  onClick={() => setSelectedFolderId(folder.id)}
-                  className="bg-neutral-900 p-5 rounded-3xl border border-neutral-800 flex flex-col items-center justify-center gap-3 hover:border-neutral-700 hover:bg-neutral-800/50 transition-all active:scale-95"
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="mt-3 text-xs font-semibold text-amber-400 hover:underline"
                 >
-                  <div className="w-14 h-14 bg-neutral-800 text-neutral-300 rounded-full flex items-center justify-center">
-                    <FolderIcon size={28} />
-                  </div>
-                  <div className="text-center w-full">
-                    <h3 className="font-semibold text-neutral-100 line-clamp-1">{folder.name}</h3>
-                    <p className="text-sm text-neutral-500 mt-1">{vocabCount} từ vựng</p>
-                  </div>
+                  Xóa tìm kiếm
                 </button>
-              )
-            })}
-          </div>
-          {folders.length === 0 && (
-            <p className="text-center text-neutral-500 mt-10">Chưa có thư mục nào.</p>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3.5">
+              {filteredFolders.map((folder) => {
+                const vocabCount = vocabularies.filter((v) => v.folderId === folder.id).length
+                return (
+                  <button
+                    key={folder.id}
+                    type="button"
+                    onClick={() => setSelectedFolderId(folder.id)}
+                    className="group relative flex h-full flex-col justify-between rounded-2xl bg-white p-4 text-neutral-900 shadow-sm ring-1 ring-neutral-200/60 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:ring-amber-400/60 active:scale-95 text-left w-full"
+                  >
+                    <div className="block flex-1 pt-1 w-full">
+                      {/* Icon */}
+                      <div className="mb-3 flex items-center justify-between">
+                        <div className="flex size-9 items-center justify-center rounded-xl bg-amber-100 text-amber-600 transition-colors group-hover:bg-amber-500 group-hover:text-white">
+                          <FolderIcon className="size-5" />
+                        </div>
+                      </div>
+
+                      {/* Folder Title */}
+                      <h3 className="line-clamp-1 text-base font-semibold text-neutral-900 group-hover:text-amber-600">
+                        {folder.name}
+                      </h3>
+
+                      {/* Word Count */}
+                      <p className="mt-4 text-xs font-medium text-neutral-500">
+                        {vocabCount} từ vựng
+                      </p>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
           )}
         </div>
       </div>
