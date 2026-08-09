@@ -22,6 +22,10 @@ type StoreState = {
   folders: Folder[]
   vocabularies: Vocabulary[]
 
+  // Search State
+  searchQuery: string
+  setSearchQuery: (query: string) => void
+
   // Language Selection State
   sourceLanguage: string
   targetLanguage: string
@@ -57,6 +61,9 @@ export const useAppStore = create<StoreState>()(
     (set) => ({
       folders: DEFAULT_FOLDERS,
       vocabularies: [],
+      searchQuery: "",
+
+      setSearchQuery: (query: string) => set({ searchQuery: query }),
 
       // Language Defaults
       sourceLanguage: "vi",
