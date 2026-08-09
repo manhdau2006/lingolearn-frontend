@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { ChevronLeft, Folder, MoreVertical, Pencil, Trash2, Plus, Search } from "lucide-react"
+import { Menu, Folder, MoreVertical, Pencil, Trash2, Plus, Search } from "lucide-react"
 import { toast } from "sonner"
 import {
   DropdownMenu,
@@ -19,6 +19,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 import { useAppStore, type Folder as StoreFolder } from "@/lib/store"
+import { MenuDrawer } from "@/components/camera/menu-drawer"
 
 export default function SavedFoldersPage() {
   const folders = useAppStore((state) => state.folders)
@@ -28,6 +29,9 @@ export default function SavedFoldersPage() {
   const addFolder = useAppStore((state) => state.addFolder)
   const updateFolder = useAppStore((state) => state.updateFolder)
   const deleteFolder = useAppStore((state) => state.deleteFolder)
+
+  // Drawer state
+  const [drawerOpen, setDrawerOpen] = useState(false)
 
   // Dialog States
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
@@ -73,16 +77,16 @@ export default function SavedFoldersPage() {
       <div className="mx-auto flex h-full w-full max-w-md flex-col bg-neutral-950">
         {/* Sticky Header Section */}
         <div className="sticky top-0 z-50 shrink-0 bg-neutral-950 border-b border-zinc-800 px-4 pt-6 pb-4">
-          {/* Top row: Back button, Page Title, Create New Button */}
+          {/* Top row: Hamburger Menu button, Page Title, Create New Button */}
           <header className="relative flex items-center justify-between pb-4">
-            <Link
-              href="/"
-              className="flex items-center gap-1 text-sm font-medium text-neutral-300 transition-colors hover:text-white active:scale-95"
-              aria-label="Quay về trang chủ"
+            <button
+              type="button"
+              onClick={() => setDrawerOpen(true)}
+              aria-label="Mở menu"
+              className="flex size-9 items-center justify-center rounded-full border border-neutral-800 bg-neutral-900/80 text-neutral-200 transition-colors hover:bg-neutral-800 hover:text-white active:scale-95"
             >
-              <ChevronLeft className="size-5" />
-              <span>Back</span>
-            </Link>
+              <Menu className="size-5" />
+            </button>
 
             <h1 className="text-base font-bold text-neutral-100">
               Bộ sưu tập
@@ -329,6 +333,9 @@ export default function SavedFoldersPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Menu Drawer */}
+        <MenuDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
       </div>
     </div>
   )
