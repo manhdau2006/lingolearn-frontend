@@ -364,7 +364,7 @@ export default function FolderDetailPage({
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation()
-                              playAudio(vocab.translatedWord)
+                              playAudio(vocab.translatedWord, vocab.targetSpeechLocale)
                             }}
                             aria-label="Nghe phát âm"
                             className="flex size-6 items-center justify-center rounded-full bg-amber-500/15 text-amber-400 transition-colors hover:bg-amber-500/25 active:scale-95 cursor-pointer"

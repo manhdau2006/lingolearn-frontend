@@ -430,7 +430,7 @@ export default function FlashcardsPage() {
               <button
                 onClick={(e) => {
                   e.stopPropagation()
-                  playAudio(currentVocab.translatedWord)
+                  playAudio(currentVocab.translatedWord, currentVocab.targetSpeechLocale)
                 }}
                 className="p-6 bg-neutral-700 text-white rounded-full shadow-lg hover:bg-neutral-600 hover:scale-110 transition-all active:scale-95 border border-neutral-600"
               >

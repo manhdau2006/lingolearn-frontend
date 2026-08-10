@@ -16,6 +16,7 @@ export interface Vocabulary {
   ipa: string
   imageUrl: string
   createdAt: number
+  targetSpeechLocale?: string
 }
 
 type StoreState = {
