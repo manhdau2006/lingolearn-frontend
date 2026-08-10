@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Menu, Folder, MoreVertical, Pencil, Trash2, Plus, Search } from "lucide-react"
 import { toast } from "sonner"
@@ -22,6 +22,12 @@ import { useAppStore, type Folder as StoreFolder } from "@/lib/store"
 import { MenuDrawer } from "@/components/camera/menu-drawer"
 
 export default function SavedFoldersPage() {
+  const [isMounted, setIsMounted] = useState(false)
+  
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
   const folders = useAppStore((state) => state.folders)
   const vocabularies = useAppStore((state) => state.vocabularies)
   const searchQuery = useAppStore((state) => state.searchQuery)
@@ -126,7 +132,18 @@ export default function SavedFoldersPage() {
         <main className="flex-1 overflow-y-auto px-4 py-4">
 
           {/* Grid Layout (2 columns on mobile) */}
-          {(() => {
+          {!isMounted ? (
+            <div className="flex h-64 w-full items-center justify-center text-neutral-400">
+              <div className="flex items-center text-sm font-medium">
+                <span>Đang tải</span>
+                <span className="ml-1 flex space-x-0.5">
+                  <span className="animate-bounce" style={{ animationDelay: "0ms" }}>.</span>
+                  <span className="animate-bounce" style={{ animationDelay: "150ms" }}>.</span>
+                  <span className="animate-bounce" style={{ animationDelay: "300ms" }}>.</span>
+                </span>
+              </div>
+            </div>
+          ) : (() => {
             const filteredFolders = folders.filter((f) =>
               f.name.toLowerCase().includes(searchQuery.toLowerCase().trim())
             )

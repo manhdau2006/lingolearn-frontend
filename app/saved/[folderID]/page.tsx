@@ -1,6 +1,6 @@
 "use client"
 
-import { use, useState } from "react"
+import { use, useState, useEffect } from "react"
 import Link from "next/link"
 import {
   ChevronLeft,
@@ -40,6 +40,11 @@ export default function FolderDetailPage({
   params: Promise<{ folderID: string }>
 }) {
   const { folderID } = use(params)
+
+  const [isMounted, setIsMounted] = useState(false)
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
 
   const folders = useAppStore((state) => state.folders)
   const vocabularies = useAppStore((state) => state.vocabularies)
@@ -272,7 +277,18 @@ export default function FolderDetailPage({
         <main className="flex-1 overflow-y-auto px-4 py-4 pb-24">
 
           {/* Vocabulary List Container */}
-          {filteredVocabs.length === 0 ? (
+          {!isMounted ? (
+            <div className="flex h-64 w-full items-center justify-center text-neutral-400">
+              <div className="flex items-center text-sm font-medium">
+                <span>Đang tải</span>
+                <span className="ml-1 flex space-x-0.5">
+                  <span className="animate-bounce" style={{ animationDelay: "0ms" }}>.</span>
+                  <span className="animate-bounce" style={{ animationDelay: "150ms" }}>.</span>
+                  <span className="animate-bounce" style={{ animationDelay: "300ms" }}>.</span>
+                </span>
+              </div>
+            </div>
+          ) : filteredVocabs.length === 0 ? (
             <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-neutral-800 bg-neutral-900/40 p-8 text-center">
               <div className="mb-3 flex size-12 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-400">
                 {searchTerm ? <Search className="size-6" /> : <Layers className="size-6" />}

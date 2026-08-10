@@ -25,6 +25,11 @@ function shuffleArray<T>(array: T[]): T[] {
 }
 
 export default function FlashcardsPage() {
+  const [isMounted, setIsMounted] = useState(false)
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
   const folders = useAppStore((state) => state.folders)
   const vocabularies = useAppStore((state) => state.vocabularies)
   
@@ -186,7 +191,9 @@ export default function FlashcardsPage() {
 
           {/* Vùng chứa danh sách các thẻ thư mục có thể cuộn độc lập (Scrollable Main Content) */}
           <main className="flex-1 overflow-y-auto px-4 py-4">
-            {filteredFolders.length === 0 ? (
+            {!isMounted ? (
+              <div className="flex h-64 w-full items-center justify-center text-muted-foreground"><div className="flex items-center text-sm font-medium"><span>Đang tải</span><span className="ml-1 flex space-x-0.5"><span className="animate-bounce" style={{ animationDelay: "0ms" }}>.</span><span className="animate-bounce" style={{ animationDelay: "150ms" }}>.</span><span className="animate-bounce" style={{ animationDelay: "300ms" }}>.</span></span></div></div>
+            ) : filteredFolders.length === 0 ? (
               <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-neutral-800 bg-neutral-900/30 p-8 text-center mt-4">
                 <p className="text-sm text-neutral-400">
                   {searchQuery ? (
