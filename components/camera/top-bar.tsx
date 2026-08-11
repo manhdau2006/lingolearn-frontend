@@ -49,7 +49,7 @@ export function TopBar({ onOpenMenu }: TopBarProps) {
           <SelectTrigger className="border-none bg-transparent px-3 py-1.5 text-xs font-medium text-neutral-100 shadow-none hover:bg-neutral-700/50">
             <SelectValue placeholder="Gốc">{currentSource.label}</SelectValue>
           </SelectTrigger>
-          <SelectContent className="w-36">
+          <SelectContent position="popper" side="bottom" sideOffset={8} className="min-w-36 w-[var(--radix-select-trigger-width)] max-h-[160px] overflow-y-auto">
             {SUPPORTED_LANGUAGES.map((lang) => (
               <SelectItem key={`source-${lang.code}`} value={lang.code}>
                 {lang.label}
@@ -78,7 +78,7 @@ export function TopBar({ onOpenMenu }: TopBarProps) {
           <SelectTrigger className="border-none bg-transparent px-3 py-1.5 text-xs font-medium text-neutral-100 shadow-none hover:bg-neutral-700/50">
             <SelectValue placeholder="Đích">{currentTarget.label}</SelectValue>
           </SelectTrigger>
-          <SelectContent className="w-36">
+          <SelectContent position="popper" side="bottom" sideOffset={8} className="min-w-36 w-[var(--radix-select-trigger-width)] max-h-[160px] overflow-y-auto">
             {SUPPORTED_LANGUAGES.map((lang) => (
               <SelectItem key={`target-${lang.code}`} value={lang.code}>
                 {lang.label}
