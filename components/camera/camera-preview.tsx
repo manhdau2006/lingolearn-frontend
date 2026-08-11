@@ -2,6 +2,8 @@
 
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react"
 import { CameraOff, RefreshCw } from "lucide-react"
+import "@tensorflow/tfjs"
+import * as cocoSsd from "@tensorflow-models/coco-ssd"
 
 type CameraPreviewProps = {
   facingFront: boolean
@@ -15,9 +17,13 @@ export const CameraPreview = forwardRef<CameraPreviewHandle, CameraPreviewProps>
   function CameraPreview({ facingFront }, ref) {
     const videoRef = useRef<HTMLVideoElement>(null)
     const streamRef = useRef<MediaStream | null>(null)
+    const modelRef = useRef<cocoSsd.ObjectDetection | null>(null)
+    const requestRef = useRef<number>()
+    const canvasRef = useRef<HTMLCanvasElement>(null)
 
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
+    const [isAiReady, setIsAiReady] = useState(false)
 
     useImperativeHandle(ref, () => ({
       captureImage: () => {
@@ -47,6 +53,88 @@ export const CameraPreview = forwardRef<CameraPreviewHandle, CameraPreviewProps>
       let isMounted = true
       setLoading(true)
       setError(null)
+      setIsAiReady(false)
+
+      const detectFrame = async () => {
+        if (
+          modelRef.current &&
+          videoRef.current &&
+          videoRef.current.readyState >= 2 &&
+          canvasRef.current
+        ) {
+          const video = videoRef.current
+          const canvas = canvasRef.current
+
+          // Match canvas dimensions to video feed
+          if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
+            canvas.width = video.videoWidth
+            canvas.height = video.videoHeight
+          }
+
+          try {
+            const predictions = await modelRef.current.detect(video)
+            const ctx = canvas.getContext("2d")
+
+            if (ctx) {
+              // Clear previous frame
+              ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+              predictions.forEach((pred) => {
+                let [x, y, width, height] = pred.bbox
+
+                // If camera is facing front, video is mirrored via CSS. 
+                // We need to mirror the X coordinate on the un-mirrored canvas to match.
+                if (facingFront) {
+                  x = canvas.width - x - width
+                }
+
+                // Draw bounding box
+                ctx.strokeStyle = "#22c55e" // Tailwind green-500
+                ctx.lineWidth = 4
+                ctx.strokeRect(x, y, width, height)
+
+                // Draw label background
+                const text = `${pred.class} - ${Math.round(pred.score * 100)}%`
+                ctx.font = "600 18px 'Inter', sans-serif"
+                const textWidth = ctx.measureText(text).width
+                const textHeight = 28
+                
+                ctx.fillStyle = "#22c55e"
+                ctx.fillRect(x, y - textHeight, textWidth + 12, textHeight)
+
+                // Draw label text
+                ctx.fillStyle = "#ffffff"
+                ctx.fillText(text, x + 6, y - 6)
+              })
+            }
+          } catch (e) {
+             console.error("Detection Error:", e)
+          }
+        }
+        requestRef.current = requestAnimationFrame(detectFrame)
+      }
+
+      async function init() {
+        try {
+          if (!modelRef.current) {
+            modelRef.current = await cocoSsd.load({ base: "mobilenet_v2" })
+          }
+          
+          if (!isMounted) return
+          setIsAiReady(true)
+
+          await startCamera()
+          
+          if (!isMounted) return
+          detectFrame()
+        } catch (err) {
+          console.error("AI Init Error:", err)
+          if (isMounted) {
+            setError("Không thể tải mô hình AI.")
+            setLoading(false)
+          }
+        }
+      }
 
       async function startCamera() {
         if (streamRef.current) {
@@ -104,13 +192,16 @@ export const CameraPreview = forwardRef<CameraPreviewHandle, CameraPreviewProps>
         }
       }
 
-      startCamera()
+      init()
 
       return () => {
         isMounted = false
         if (streamRef.current) {
           streamRef.current.getTracks().forEach((track) => track.stop())
           streamRef.current = null
+        }
+        if (requestRef.current) {
+          cancelAnimationFrame(requestRef.current)
         }
       }
     }, [facingFront])
@@ -128,12 +219,22 @@ export const CameraPreview = forwardRef<CameraPreviewHandle, CameraPreviewProps>
               facingFront ? "-scale-x-100" : ""
             } ${error ? "hidden" : "block"}`}
           />
+          
+          {/* AI Bounding Box Canvas */}
+          <canvas
+            ref={canvasRef}
+            className={`pointer-events-none absolute inset-0 size-full object-cover transition-transform duration-300 ${
+              error ? "hidden" : "block"
+            }`}
+          />
 
           {/* Loading State */}
           {loading && !error && (
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-neutral-900 text-neutral-400">
               <RefreshCw className="size-8 animate-spin text-amber-400" />
-              <span className="mt-3 text-xs font-medium">Đang mở camera...</span>
+              <span className="mt-3 text-xs font-medium">
+                {!isAiReady ? "Đang tải ống kính AI..." : "Đang mở camera..."}
+              </span>
             </div>
           )}
 
